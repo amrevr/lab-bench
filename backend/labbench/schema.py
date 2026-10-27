@@ -30,7 +30,7 @@ class Event(BaseModel):
 
 
 class Step(BaseModel):
-    id: int
+    id: int                          # dataset step id; execution order is list position
     text: str
     action: str
     obj: str

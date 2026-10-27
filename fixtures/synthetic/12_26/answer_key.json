@@ -1,0 +1,11 @@
+{
+ "clip": "12_26",
+ "synthetic": true,
+ "errors": [
+  {
+   "type": "technique",
+   "step_id": 2,
+   "t": 18.0
+  }
+ ]
+}

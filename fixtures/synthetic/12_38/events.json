@@ -1,0 +1,80 @@
+[
+ {
+  "t_start": 4.0,
+  "t_end": 10.0,
+  "action": "cut",
+  "obj": "tomato",
+  "target": null,
+  "technique": "slice",
+  "conf": 0.9,
+  "frame_refs": [
+   5.0,
+   8.0
+  ]
+ },
+ {
+  "t_start": 12.0,
+  "t_end": 18.0,
+  "action": "cut",
+  "obj": "mozzarella",
+  "target": null,
+  "technique": "slice",
+  "conf": 0.9,
+  "frame_refs": [
+   13.0,
+   16.0
+  ]
+ },
+ {
+  "t_start": 20.0,
+  "t_end": 26.0,
+  "action": "place",
+  "obj": "tomato",
+  "target": "plate",
+  "technique": null,
+  "conf": 0.9,
+  "frame_refs": [
+   21.0,
+   24.0
+  ]
+ },
+ {
+  "t_start": 28.0,
+  "t_end": 34.0,
+  "action": "place",
+  "obj": "basil",
+  "target": "plate",
+  "technique": null,
+  "conf": 0.9,
+  "frame_refs": [
+   29.0,
+   32.0
+  ]
+ },
+ {
+  "t_start": 36.0,
+  "t_end": 42.0,
+  "action": "pour",
+  "obj": "balsamic vinegar",
+  "target": "plate",
+  "technique": null,
+  "conf": 0.9,
+  "frame_refs": [
+   37.0,
+   40.0
+  ]
+ },
+ {
+  "t_start": 44.0,
+  "t_end": 50.0,
+  "action": "sprinkle",
+  "obj": "salt",
+  "target": "plate",
+  "technique": null,
+  "conf": 0.9,
+  "frame_refs": [
+   45.0,
+   48.0
+  ]
+ }
+]

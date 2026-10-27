@@ -1,0 +1,15 @@
+{
+  "name": "Tomato Mozzarella Salad (CaptainCook4D recipe 12)",
+  "source_clip": "12_5",
+  "steps": [
+    {"id": 125, "text": "Rinse the tomato", "action": "wash", "obj": "tomato"},
+    {"id": 122, "text": "Dry the tomato", "action": "dry", "obj": "tomato"},
+    {"id": 119, "text": "Slice the tomato", "action": "cut", "obj": "tomato", "technique": "slice"},
+    {"id": 120, "text": "Place the slices in a single layer", "action": "place", "obj": "tomato", "target": "plate"},
+    {"id": 124, "text": "Sprinkle the mozzarella", "action": "sprinkle", "obj": "mozzarella", "target": "plate"},
+    {"id": 127, "text": "Garnish with Italian seasoning", "action": "sprinkle", "obj": "italian seasoning", "target": "plate"},
+    {"id": 126, "text": "Season with pepper", "action": "sprinkle", "obj": "pepper", "target": "plate"},
+    {"id": 123, "text": "Season with salt", "action": "sprinkle", "obj": "salt", "target": "plate"},
+    {"id": 121, "text": "Drizzle olive oil", "action": "pour", "obj": "olive oil", "target": "plate"}
+  ]
+}
