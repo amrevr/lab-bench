@@ -5,3 +5,5 @@ out/
 __pycache__/
 *.pyc
 node_modules/
+cluster/results/*
+!cluster/results/.gitkeep
