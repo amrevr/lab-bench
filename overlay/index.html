@@ -1,0 +1,78 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lab Bench Copilot</title>
+<style>
+  :root { --bg:#12151a; --panel:#1b2028; --fg:#e8ecf1; --mute:#8b96a5; --ok:#3fb67a; --ask:#e0b341; --flag:#e5604f; --line:#2a313c; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f4f6f9; --panel:#fff; --fg:#161b22; --mute:#5b6675; --line:#d8dee6; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.4 system-ui,sans-serif; }
+  main { display:grid; grid-template-columns: minmax(0,2fr) minmax(260px,1fr); gap:16px; padding:16px; max-width:1200px; margin:auto; }
+  @media (max-width:800px){ main { grid-template-columns:1fr; } }
+  .stage { position:relative; background:#000; border-radius:10px; overflow:hidden; aspect-ratio:16/9; }
+  video { width:100%; height:100%; display:block; }
+  .nov { position:absolute; inset:0; display:grid; place-items:center; color:var(--mute); }
+  .toast { position:absolute; left:12px; right:12px; bottom:12px; padding:12px 14px; border-radius:8px; background:var(--panel); border-left:6px solid var(--flag); box-shadow:0 4px 16px #0008; color:var(--fg); }
+  .toast.ask { border-color:var(--ask); } .toast[hidden]{display:none}
+  .toast b { display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute); margin-bottom:2px; }
+  aside { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; align-self:start; }
+  h1 { font-size:16px; margin:0 0 8px; } ol { list-style:none; margin:0; padding:0; }
+  li { padding:8px 10px; border-radius:6px; display:flex; gap:8px; align-items:baseline; border:1px solid transparent; }
+  li .dot { width:10px; height:10px; border-radius:50%; background:var(--line); flex:none; }
+  li.done .dot { background:var(--ok); } li.ask .dot { background:var(--ask); } li.flag .dot { background:var(--flag); }
+  li.cur { border-color:var(--line); }
+  .bar { margin-top:12px; position:relative; height:28px; background:var(--panel); border:1px solid var(--line); border-radius:6px; cursor:pointer; }
+  .tick { position:absolute; top:3px; width:4px; height:20px; border-radius:2px; background:var(--flag); } .tick.ask { background:var(--ask); }
+  .head { position:absolute; top:0; bottom:0; width:2px; background:var(--fg); }
+  .row { display:flex; gap:8px; align-items:center; margin-top:8px; color:var(--mute); font-size:13px; }
+  button { font:inherit; padding:6px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel); color:var(--fg); cursor:pointer; }
+  #why { margin-top:8px; font-size:13px; color:var(--mute); }
+</style>
+<main>
+  <section>
+    <div class="stage" id="stage">
+      <video id="v" muted playsinline hidden></video>
+      <div class="nov" id="nov">no video loaded, simulated clock</div>
+      <div class="toast" id="toast" hidden></div>
+    </div>
+    <div class="bar" id="bar"><div class="head" id="head"></div></div>
+    <div class="row"><button id="play">Play</button><span id="clock">0.0s</span><span id="title"></span></div>
+    <div id="why"></div>
+  </section>
+  <aside><h1>Protocol</h1><ol id="steps"></ol></aside>
+</main>
+<script>
+const q = new URLSearchParams(location.search);
+const sessionUrl = q.get('session') || 'session.json', videoUrl = q.get('video');
+const $ = id => document.getElementById(id);
+let S, dur = 0, t = 0, playing = false, last = 0;
+const v = $('v');
+fetch(sessionUrl).then(r => r.json()).then(s => {
+  S = s; $('title').textContent = s.clip + ' - ' + s.protocol.name;
+  dur = Math.max(...s.events.map(e => e.t_end), ...s.verdicts.map(x => x.t)) + 3;
+  s.protocol.steps.forEach(st => { const li = document.createElement('li'); li.id = 's' + st.id;
+    li.innerHTML = '<span class="dot"></span><span>' + st.text + '</span>'; $('steps').appendChild(li); });
+  if (videoUrl) { v.src = videoUrl; v.hidden = false; $('nov').hidden = true;
+    v.onloadedmetadata = () => { dur = Math.max(dur, v.duration); ticks(); }; }
+  ticks(); render();
+});
+function ticks() { document.querySelectorAll('.tick').forEach(e => e.remove());
+  S.verdicts.forEach(x => { const d = document.createElement('div'); d.className = 'tick ' + (x.mode === 'ask' ? 'ask' : '');
+    d.style.left = (x.t / dur * 100) + '%'; d.title = x.message; $('bar').appendChild(d); }); }
+function now() { return videoUrl ? v.currentTime : t; }
+function render() {
+  const n = now(); $('clock').textContent = n.toFixed(1) + 's'; $('head').style.left = (n / dur * 100) + '%';
+  const seen = S.verdicts.filter(x => x.t <= n), done = new Set(S.events.filter(e => e.t_end <= n && e.conf >= .5).map(e => e.action + '|' + e.obj));
+  S.protocol.steps.forEach(st => { const li = $('s' + st.id); const vs = seen.filter(x => x.step_id === st.id);
+    li.className = vs.some(x => x.mode === 'flag') ? 'flag' : vs.length ? 'ask' : done.has(st.action + '|' + st.obj) ? 'done' : ''; });
+  const recent = seen.filter(x => n - x.t < 6).pop(), tt = $('toast');
+  if (recent) { tt.hidden = false; tt.className = 'toast ' + recent.mode;
+    tt.innerHTML = '<b>' + (recent.mode === 'ask' ? 'Quick check' : 'Heads up') + '</b>' + (recent.coach || recent.message);
+    $('why').textContent = 'Source frames at ' + (recent.frame_refs.map(f => f.toFixed(1) + 's').join(', ') || 'n/a') + ' (' + recent.kind + ', conf ' + recent.conf + ')'; }
+  else tt.hidden = true;
+}
+function tick(ts) { if (playing && !videoUrl) { t = Math.min(dur, t + (ts - last) / 1000); if (t >= dur) playing = false; } last = ts; if (S) render(); requestAnimationFrame(tick); }
+requestAnimationFrame(tick);
+$('play').onclick = () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; if (videoUrl) playing ? v.play() : v.pause(); };
+$('bar').onclick = e => { const f = (e.clientX - $('bar').getBoundingClientRect().left) / $('bar').clientWidth; if (videoUrl) v.currentTime = f * dur; else t = f * dur; };
+</script>

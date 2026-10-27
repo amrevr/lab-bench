@@ -1,0 +1,12 @@
+{
+  "name": "Synthetic self-test protocol (not the real recipe 12 steps)",
+  "source_clip": "12_5",
+  "steps": [
+    {"id": 1, "text": "Slice the tomatoes", "action": "cut", "obj": "tomato", "technique": "slice"},
+    {"id": 2, "text": "Slice the mozzarella", "action": "cut", "obj": "mozzarella", "technique": "slice"},
+    {"id": 3, "text": "Arrange tomato and mozzarella on the plate", "action": "place", "obj": "tomato", "target": "plate"},
+    {"id": 4, "text": "Add basil leaves", "action": "place", "obj": "basil", "target": "plate"},
+    {"id": 5, "text": "Drizzle olive oil", "action": "pour", "obj": "olive oil", "target": "plate"},
+    {"id": 6, "text": "Season with salt and pepper", "action": "sprinkle", "obj": "salt", "target": "plate"}
+  ]
+}

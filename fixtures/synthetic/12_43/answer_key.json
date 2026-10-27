@@ -1,0 +1,11 @@
+{
+ "clip": "12_43",
+ "synthetic": true,
+ "errors": [
+  {
+   "type": "omission",
+   "step_id": 4,
+   "t": 36.0
+  }
+ ]
+}

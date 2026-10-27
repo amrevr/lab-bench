@@ -1,0 +1,11 @@
+{
+ "clip": "12_38",
+ "synthetic": true,
+ "errors": [
+  {
+   "type": "wrong_ingredient",
+   "step_id": 5,
+   "t": 42.0
+  }
+ ]
+}
