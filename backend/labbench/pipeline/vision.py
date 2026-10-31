@@ -49,7 +49,10 @@ def parse_events(text: str, t0: float = 0.0, t1: float = 1e9) -> list[Event]:
         ev = Event.model_validate(raw)
         ev.obj = ev.obj.lower().replace("_", " ")       # the aligner compares names exactly
         ev.target = ev.target.lower().replace("_", " ") if ev.target else None
-        ev.t_start, ev.t_end = max(ev.t_start, t0), min(ev.t_end, t1)
+        if t0 > 0 and ev.t_end < t0:       # model answered window-relative: shift into clip time
+            ev.t_start, ev.t_end = ev.t_start + t0, ev.t_end + t0
+        ev.t_start = min(max(ev.t_start, t0), t1)       # then clamp, keeping t0 <= start <= end <= t1
+        ev.t_end = min(max(ev.t_end, ev.t_start), t1)
         out.append(ev)
     return out
 
