@@ -228,10 +228,6 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual([x["hit"] for x in r["verdicts"]], [True, False, True, False])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class KeyframesClipEndTests(unittest.TestCase):
     def test_missing_last_frame_is_skipped(self):
         import tempfile
@@ -246,3 +242,7 @@ class KeyframesClipEndTests(unittest.TestCase):
             kf = chunker.keyframes(pathlib.Path("c.mp4"), 9.0, 10.5, pathlib.Path(d))   # short final window
             self.assertTrue(all(p.exists() for _, p in kf))
         self.assertEqual([round(t, 2) for t, _ in kf], [9.19, 9.56, 9.94])
+
+
+if __name__ == "__main__":
+    unittest.main()
