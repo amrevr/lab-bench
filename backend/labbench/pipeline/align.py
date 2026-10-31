@@ -149,8 +149,9 @@ class Aligner:
         cur = (self._n, ev)
         self._n += 1
         step, how = self._find(ev)
-        if step is None or not self._consistent(step, ev) or any(a not in self.done for a in step.after):
+        if step is None or not self._consistent(step, ev):
             return []
+        ready = all(a in self.done for a in step.after)   # else attempted anyway: the missing prerequisite is what gets flagged
         if how == "item" and not (ev.conf >= STRONG and self._corroborated(ev)):   # an unknown noun is noise until it is strong and repeated
             return []
         out: list[Verdict | None] = []
@@ -180,6 +181,9 @@ class Aligner:
                      "The expert did them the other way round."), [self.done[first.id], cur]))
             fresh = step.id not in self.done
             self.done.setdefault(step.id, cur)
+            if fresh:   # a step done before its prerequisite was only an earlier, different action: not this step
+                for d in [d for d in self.done if step.id in self.steps[self.pos[d]].after]:
+                    del self.done[d]
             for m in self.steps:
                 if self.pos[m.id] < self.pos[step.id] and m.id not in self.done and not m.optional:
                     after = [c for d, c in self.done.items() if self.pos[d] > self.pos[m.id]
@@ -187,7 +191,7 @@ class Aligner:
                     if len(after) >= self.SKIP_AFTER:
                         out.append(self._emit(t, VerdictKind.SKIPPED, m.id,
                             (f"Step {m.id} ('{m.label}') looks skipped.", f"Did you do '{m.label}' (step {m.id})?"), after))
-            if how == "exact" and fresh and not any(out):
+            if how == "exact" and fresh and ready and not any(out):
                 out.append(self._emit(t, VerdictKind.ON_TRACK, step.id, (f"Step {step.id} ('{step.label}') done.",) * 2, [cur]))
         return [v for v in out if v]
 
