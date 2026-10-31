@@ -118,14 +118,13 @@ class MetaSam:
 
         def one(c):
             try:
-                return self._retry(data_url, c)
-            except Exception as x:
+                return parse_stream(self._retry(data_url, c), c, t0, self.fps)
+            except Exception as x:       # a bad request or a malformed frame skips this concept only
                 (errors if errors is not None else []).append(f"{c}: {type(x).__name__}: {x}"[:200])
-                return ""
+                return []
 
         with ThreadPoolExecutor(max(1, len(prompts))) as ex:      # one request per concept, in parallel
-            texts = list(ex.map(one, prompts))
-        return [t for c, text in zip(prompts, texts) for t in parse_stream(text, c, t0, self.fps)]
+            return [t for tracks in ex.map(one, prompts) for t in tracks]
 
 
 def iou(a, b) -> float:
