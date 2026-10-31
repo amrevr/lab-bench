@@ -27,6 +27,7 @@
   .row { display:flex; gap:8px; align-items:center; margin-top:8px; color:var(--mute); font-size:13px; }
   button { font:inherit; padding:6px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel); color:var(--fg); cursor:pointer; }
   #why { margin-top:8px; font-size:13px; color:var(--mute); }
+  #why img { display:block; max-width:160px; margin-top:6px; border-radius:6px; }
 </style>
 <main>
   <section>
@@ -44,32 +45,37 @@
 <script>
 const q = new URLSearchParams(location.search);
 const sessionUrl = q.get('session') || 'session.json', videoUrl = q.get('video');
+const framesUrl = q.get('frames') || '/out/frames';   // <frames>/<clip>/<t as %08.2f>.jpg, as chunker.keyframes writes them
 const $ = id => document.getElementById(id);
-let S, dur = 0, t = 0, playing = false, last = 0;
+let S, dur = 0, t = 0, playing = false, last = 0, shown = null;
 const v = $('v');
 fetch(sessionUrl).then(r => r.json()).then(s => {
   S = s; $('title').textContent = s.clip + ' - ' + s.protocol.name;
   dur = Math.max(...s.events.map(e => e.t_end), ...s.verdicts.map(x => x.t)) + 3;
   s.protocol.steps.forEach(st => { const li = document.createElement('li'); li.id = 's' + st.id;
-    li.innerHTML = '<span class="dot"></span><span>' + st.text + '</span>'; $('steps').appendChild(li); });
+    li.innerHTML = '<span class="dot"></span><span>' + st.label + '</span>'; $('steps').appendChild(li); });
   if (videoUrl) { v.src = videoUrl; v.hidden = false; $('nov').hidden = true;
     v.onloadedmetadata = () => { dur = Math.max(dur, v.duration); ticks(); }; }
   ticks(); render();
 });
 function ticks() { document.querySelectorAll('.tick').forEach(e => e.remove());
-  S.verdicts.forEach(x => { const d = document.createElement('div'); d.className = 'tick ' + (x.mode === 'ask' ? 'ask' : '');
+  S.verdicts.filter(x => x.mode !== 'ok').forEach(x => { const d = document.createElement('div'); d.className = 'tick ' + (x.mode === 'ask' ? 'ask' : '');
     d.style.left = (x.t / dur * 100) + '%'; d.title = x.message; $('bar').appendChild(d); }); }
 function now() { return videoUrl ? v.currentTime : t; }
 function render() {
   const n = now(); $('clock').textContent = n.toFixed(1) + 's'; $('head').style.left = (n / dur * 100) + '%';
   const seen = S.verdicts.filter(x => x.t <= n), done = new Set(S.events.filter(e => e.t_end <= n && e.conf >= .5).map(e => e.action + '|' + e.obj));
-  S.protocol.steps.forEach(st => { const li = $('s' + st.id); const vs = seen.filter(x => x.step_id === st.id);
-    li.className = vs.some(x => x.mode === 'flag') ? 'flag' : vs.length ? 'ask' : done.has(st.action + '|' + st.obj) ? 'done' : ''; });
-  const recent = seen.filter(x => n - x.t < 6).pop(), tt = $('toast');
+  S.protocol.steps.forEach(st => { const li = $('s' + st.id); const vs = seen.filter(x => x.step_id === st.id && x.mode !== 'ok'), ok = seen.some(x => x.step_id === st.id && x.mode === 'ok');
+    li.className = vs.some(x => x.mode === 'flag') ? 'flag' : vs.length ? 'ask' : ok || done.has(st.action + '|' + st.obj) ? 'done' : ''; });
+  const recent = seen.filter(x => x.mode !== 'ok' && n - x.t < 6).pop(), tt = $('toast');
   if (recent) { tt.hidden = false; tt.className = 'toast ' + recent.mode;
     tt.innerHTML = '<b>' + (recent.mode === 'ask' ? 'Quick check' : 'Heads up') + '</b>' + (recent.coach || recent.message);
-    $('why').textContent = 'Source frames at ' + (recent.frame_refs.map(f => f.toFixed(1) + 's').join(', ') || 'n/a') + ' (' + recent.kind + ', conf ' + recent.conf + ')'; }
-  else tt.hidden = true;
+    if (shown !== recent) { shown = recent;
+      const fr = recent.evidence.flatMap(e => e.frame_t.map(f => [e.clip || S.clip, f]));
+      $('why').textContent = 'Source frames at ' + (fr.map(([, f]) => f.toFixed(1) + 's').join(', ') || 'n/a') + ' (' + recent.kind + ', conf ' + recent.conf + ')';
+      fr.forEach(([c, f]) => { const im = document.createElement('img');
+        im.src = framesUrl + '/' + c + '/' + f.toFixed(2).padStart(8, '0') + '.jpg'; im.onerror = () => im.remove(); $('why').appendChild(im); }); } }
+  else { tt.hidden = true; shown = null; $('why').textContent = ''; }
 }
 function tick(ts) { if (playing && !videoUrl) { t = Math.min(dur, t + (ts - last) / 1000); if (t >= dur) playing = false; } last = ts; if (S) render(); requestAnimationFrame(tick); }
 requestAnimationFrame(tick);

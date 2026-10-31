@@ -2,14 +2,22 @@ import json
 import pathlib
 import unittest
 
-from labbench.eval import score_clip
-from labbench.run import ROOT, run_clip
-from labbench.schema import ASK_THRESHOLD, FLAG_THRESHOLD, VerdictKind, mode_for
+from labbench.answerkey import parse_error
+from labbench.eval import by_category, score_clip
+from labbench.pipeline.align import Aligner
+from labbench.run import ROOT, load_protocol, run_clip
+from labbench.schema import ASK_THRESHOLD, FLAG_THRESHOLD, Event, Step, Verdict, VerdictKind, mode_for
+
+
+def non_ok(session):
+    return [v for v in session["verdicts"] if v["mode"] != "ok"]
 
 
 class PipelineTests(unittest.TestCase):
     def test_expert_run_is_clean(self):
-        self.assertEqual(run_clip(ROOT, "12_5")["verdicts"], [])
+        s = run_clip(ROOT, "12_5")
+        self.assertEqual(non_ok(s), [])
+        self.assertEqual({v["kind"] for v in s["verdicts"]}, {"on_track"})    # on-track is shown as mode ok
 
     def test_all_fixture_errors_caught_without_false_alarms(self):
         for d in sorted(ROOT.iterdir()):
@@ -21,7 +29,7 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(r["false_alarms"], 0, r)
 
     def test_unsure_technique_asks_instead_of_flagging(self):
-        v = run_clip(ROOT, "12_26")["verdicts"][0]
+        v = non_ok(run_clip(ROOT, "12_26"))[0]
         self.assertEqual(v["mode"], "ask")
 
     def test_mode_thresholds(self):
@@ -29,6 +37,64 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(mode_for(k, FLAG_THRESHOLD), "flag")
         self.assertEqual(mode_for(k, ASK_THRESHOLD), "ask")
         self.assertEqual(mode_for(k, ASK_THRESHOLD - 0.01), "ok")
+
+    def test_strict_kinds_need_higher_confidence(self):
+        self.assertEqual(mode_for(VerdictKind.WRONG_TECHNIQUE, 0.8), "ask")
+        self.assertEqual(mode_for(VerdictKind.WRONG_ITEM, 0.85), "flag")
+        self.assertEqual(mode_for(VerdictKind.WRONG_TECHNIQUE, 0.49), "ok")
+
+    def test_order_and_skipped_use_minimum_event_confidence(self):
+        # fixture 12_41: the order error spans two events; weaken one and the verdict follows it
+        events = json.loads((ROOT / "12_41" / "events.json").read_text())
+        events[2]["conf"] = 0.6
+        al = Aligner(load_protocol(ROOT))
+        for e in sorted(map(Event.model_validate, events), key=lambda e: e.t_end):
+            al.feed(e)
+        (o,) = [v for v in al.verdicts if v.kind == VerdictKind.WRONG_ORDER]
+        self.assertEqual((o.conf, o.mode), (0.6, "ask"))
+        self.assertEqual(len(o.evidence), 2)
+
+    def test_skipped_at_end_uses_event_confidence(self):
+        al = Aligner(load_protocol(ROOT))
+        al.feed(Event(t_start=0, t_end=1, action="cut", obj="tomato", technique="slice", conf=0.6))
+        self.assertEqual({(v.conf, v.mode) for v in al.finish(10)}, {(0.6, "ask")})
+
+    def test_alignment_ignores_step_text(self):
+        p = load_protocol(ROOT)
+        events = json.loads((ROOT / "12_43" / "events.json").read_text())
+        def run(proto):
+            al = Aligner(proto)
+            for e in map(Event.model_validate, events):
+                al.feed(e)
+            al.finish(99)
+            return [(v.kind, v.step_id, v.mode) for v in al.verdicts]
+        p2 = p.model_copy(update={"steps": [s.model_copy(update={"label": "x", "recipe_text": "y", "narration": "z"})
+                                            for s in p.steps]})
+        self.assertEqual(run(p), run(p2))
+
+    def test_evidence_points_at_event_and_frames(self):
+        (v,) = non_ok(run_clip(ROOT, "12_26"))
+        (ev,) = v["evidence"]
+        self.assertEqual((ev["clip"], ev["event_idx"], ev["frame_t"]), ("12_26", 1, [13.0, 16.0]))
+
+    def test_old_json_still_loads(self):
+        self.assertEqual(Step.model_validate({"id": 1, "text": "Slice", "action": "cut", "obj": "tomato"}).label, "Slice")
+        v = Verdict.model_validate({"t": 1, "step_id": 1, "kind": "skipped_step", "conf": 0.9, "mode": "flag",
+                                    "message": "m", "frame_refs": [2.0, 5.0]})
+        self.assertEqual(v.evidence[0].frame_t, [2.0, 5.0])
+
+    def test_real_key_scored_per_step_and_category(self):
+        key = {"clip": "x", "errors": [parse_error(e) for e in
+               ["125 Temperature", "121 Missing Step", "120 Order/Technique", "119 Measurement/Technique"]]}
+        def vd(kind, step, conf=0.9):
+            return {"t": 0, "step_id": step, "kind": kind, "conf": conf, "mode": "flag", "message": ""}
+        sess = {"verdicts": [vd("wrong_item", 125), vd("wrong_order", 121), vd("wrong_technique", 119),
+                             vd("skipped_step", 99), {**vd("skipped_step", 120), "mode": "ok"}]}
+        r = score_clip(sess, key)
+        self.assertEqual(by_category([r]), {"Temperature": (1, 1), "Missing Step": (0, 1), "Order": (0, 1),
+                                            "Technique": (1, 2), "Measurement": (1, 1)})
+        self.assertEqual(r["false_alarms"], 2)               # step 99, and wrong_order on 121 (the key says Missing Step)
+        self.assertEqual([x["hit"] for x in r["verdicts"]], [True, False, True, False])
 
 
 if __name__ == "__main__":

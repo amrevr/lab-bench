@@ -9,12 +9,14 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # Confidence thresholds on a *deviation*. Above FLAG we say it plainly, between ASK and
 # FLAG we ask the novice to confirm instead of alarming, below ASK we stay silent.
+# Technique and wrong-item verdicts need a higher bar (issue #9). Tuned on 4 novice clips only.
 FLAG_THRESHOLD = 0.75
 ASK_THRESHOLD = 0.40
+STRICT = (0.85, 0.50)
 
 
 class Event(BaseModel):
@@ -24,19 +26,33 @@ class Event(BaseModel):
     obj: str                         # ingredient or tool acted on
     target: Optional[str] = None     # destination (plate, bowl, ...)
     technique: Optional[str] = None  # slice, tear, saw, ...
-    conf: float = Field(ge=0, le=1, default=0.8)
-    track_ids: list[str] = []
+    conf: float = Field(ge=0, le=1, default=0.8)       # the vision model's confidence
+    sam_conf: Optional[float] = None                   # SAM detection confidence, kept separate
+    track_ids: list[str] = []        # cross-chunk track ids (see sam.link_tracks)
     frame_refs: list[float] = []     # timestamps (s) of source keyframes
+    clip: Optional[str] = None
+    chunk: Optional[list[float]] = None                # [start, end] of the chunk it came from
 
 
 class Step(BaseModel):
     id: int                          # dataset step id; execution order is list position
-    text: str
+    label: str                       # short step name (was `text`)
+    recipe_text: Optional[str] = None
+    narration: Optional[str] = None  # null until the expert narration source is decided (#15)
+    qty: Optional[str] = None        # "1/2 in", "1/4 tsp"; not visible to the pipeline, shown only
+    source_frames: list[float] = []  # expert-clip timestamps (s)
     action: str
     obj: str
     target: Optional[str] = None
     technique: Optional[str] = None
     optional: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_text(cls, d):
+        if isinstance(d, dict) and "text" in d and "label" not in d:
+            d = {**d, "label": d["text"]}
+        return d
 
 
 class Protocol(BaseModel):
@@ -53,6 +69,14 @@ class VerdictKind(str, Enum):
     WRONG_ITEM = "wrong_item"
 
 
+class Evidence(BaseModel):
+    clip: Optional[str] = None
+    t_start: float
+    t_end: float
+    frame_t: list[float] = []        # keyframe timestamps; the overlay shows these images
+    event_idx: Optional[int] = None  # index into the session's events
+
+
 class Verdict(BaseModel):
     t: float                         # when the coach speaks (clip time, s)
     step_id: int
@@ -60,14 +84,29 @@ class Verdict(BaseModel):
     conf: float
     mode: str                        # "flag" | "ask" | "ok"
     message: str
-    frame_refs: list[float] = []
+    evidence: list[Evidence] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_frame_refs(cls, d):
+        if isinstance(d, dict) and "frame_refs" in d:
+            d = dict(d)
+            refs = d.pop("frame_refs")
+            if refs and "evidence" not in d:
+                d["evidence"] = [{"t_start": min(refs), "t_end": max(refs), "frame_t": refs}]
+        return d
 
 
-def mode_for(kind: VerdictKind, conf: float) -> str:
+# (flag, ask) per kind; kinds not listed use the defaults.
+THRESHOLDS = {VerdictKind.WRONG_TECHNIQUE: STRICT, VerdictKind.WRONG_ITEM: STRICT}
+
+
+def mode_for(kind: VerdictKind, conf: float, thresholds: dict = THRESHOLDS) -> str:
     if kind == VerdictKind.ON_TRACK:
         return "ok"
-    if conf >= FLAG_THRESHOLD:
+    flag, ask = thresholds.get(kind, (FLAG_THRESHOLD, ASK_THRESHOLD))
+    if conf >= flag:
         return "flag"
-    if conf >= ASK_THRESHOLD:
+    if conf >= ask:
         return "ask"
     return "ok"

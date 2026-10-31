@@ -7,9 +7,19 @@
   "target": null,
   "technique": "slice",
   "conf": 0.9,
+  "sam_conf": 0.9,
+  "track_ids": [
+   "hand:1",
+   "tomato:1"
+  ],
   "frame_refs": [
    5.0,
    8.0
+  ],
+  "clip": "12_43",
+  "chunk": [
+   4.0,
+   7.0
   ]
  },
  {
@@ -20,9 +30,19 @@
   "target": null,
   "technique": "slice",
   "conf": 0.9,
+  "sam_conf": 0.9,
+  "track_ids": [
+   "hand:1",
+   "mozzarella:1"
+  ],
   "frame_refs": [
    13.0,
    16.0
+  ],
+  "clip": "12_43",
+  "chunk": [
+   12.0,
+   15.0
   ]
  },
  {
@@ -33,9 +53,19 @@
   "target": "plate",
   "technique": null,
   "conf": 0.9,
+  "sam_conf": 0.9,
+  "track_ids": [
+   "hand:1",
+   "tomato:1"
+  ],
   "frame_refs": [
    21.0,
    24.0
+  ],
+  "clip": "12_43",
+  "chunk": [
+   20.0,
+   23.0
   ]
  },
  {
@@ -46,9 +76,19 @@
   "target": "plate",
   "technique": null,
   "conf": 0.9,
+  "sam_conf": 0.9,
+  "track_ids": [
+   "hand:1",
+   "olive oil:1"
+  ],
   "frame_refs": [
    29.0,
    32.0
+  ],
+  "clip": "12_43",
+  "chunk": [
+   28.0,
+   31.0
   ]
  },
  {
@@ -59,9 +99,19 @@
   "target": "plate",
   "technique": null,
   "conf": 0.9,
+  "sam_conf": 0.9,
+  "track_ids": [
+   "hand:1",
+   "salt:1"
+  ],
   "frame_refs": [
    37.0,
    40.0
+  ],
+  "clip": "12_43",
+  "chunk": [
+   36.0,
+   39.0
   ]
  }
 ]
