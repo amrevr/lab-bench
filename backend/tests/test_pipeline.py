@@ -15,7 +15,7 @@ def non_ok(session):
 
 def _protocol():
     st = lambda i, a, o, t=None, g=None: Step(id=i, label=f"s{i}", action=a, obj=o, target=t, group=g)
-    return [st(1, "cut", "tomato"), st(2, "place", "tomato", "plate"), st(3, "sprinkle", "salt", "plate", "s"),
+    return [Step(id=1, label="s1", action="cut", obj="tomato", technique="slice"), st(2, "place", "tomato", "plate"), st(3, "sprinkle", "salt", "plate", "s"),
             st(4, "sprinkle", "pepper", "plate", "s")]
 
 
@@ -44,6 +44,11 @@ class AlignerMatchingTests(unittest.TestCase):
         cut = lambda t: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", conf=0.9)
         self.assertEqual(_feed([place, cut(1)]), [])
         self.assertEqual(_feed([place, cut(10)]), [("wrong_order", 2)])
+
+    def test_technique_is_judged_on_later_events_of_an_attempted_step(self):
+        cut = lambda t, tech: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech, conf=0.95)
+        self.assertEqual(_feed([cut(0, "slice"), cut(5, "slice")]), [])
+        self.assertEqual(_feed([cut(0, "slice"), cut(5, "dice"), cut(9, "dice")]), [("wrong_technique", 1)])   # once per step
 
     def test_group_steps_may_come_in_any_order(self):
         ev = lambda t, o: dict(t_start=t, t_end=t + 1, action="sprinkle", obj=o, target="plate", conf=0.9)

@@ -54,6 +54,11 @@ class Aligner:
             if s.technique and ev.technique and not _same(s.technique, ev.technique):
                 return s, "technique"
             return s, "exact"
+        # An attempted step is judged again for technique: the first event is often the setup, the method shows later.
+        for s in self.steps:
+            if s.id in self.done and s.technique and ev.technique and s.action == ev.action and _same(s.obj, ev.obj) \
+                    and not _same(s.technique, ev.technique):
+                return s, "technique"
         # Same action, same destination, different object -> wrong item for the next such step.
         for s in self.steps:
             if s.action == ev.action and not _same(s.obj, ev.obj) and s.id not in self.done and (
@@ -87,6 +92,10 @@ class Aligner:
             return []
         out: list[Verdict | None] = []
         t = ev.t_end
+        if how == "technique" and step.id in self.done:
+            return [v for v in [self._emit(t, VerdictKind.WRONG_TECHNIQUE, step.id,
+                f"Step {step.id}: the expert used '{step.technique}' on the {step.obj}; "
+                f"this looks like '{ev.technique}'.", [cur])] if v]
         if how == "technique":
             out.append(self._emit(t, VerdictKind.WRONG_TECHNIQUE, step.id,
                 f"Step {step.id}: the expert used '{step.technique}' on the {step.obj}; "
