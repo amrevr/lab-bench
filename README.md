@@ -1,18 +1,18 @@
 # Lab Bench Copilot
 
 Learn a procedure from one expert video plus its written steps, then watch a novice video in short chunks and
-flag skipped steps, wrong order, wrong technique or wrong ingredient. Latency claim: about 10 s, near-live, on
-hosted APIs (3 s chunks; 5 s is not reachable with this chunking, see issue #10). When unsure it asks
-("Quick check") instead of alarming. Built for the Meta Global AI Developer Hackathon, Indie track.
+try to flag skipped steps, wrong order and wrong ingredient. Technique, quantity and spill errors are not reliably
+detected. Latency: roughly 10-15 s from the mistake (6-10 s median from chunk close to verdict on hosted APIs),
+near-live, not real time. When unsure it asks ("Quick check") instead of alarming. Built for the Meta Global AI Developer Hackathon, Indie track.
 
 ## Pipeline
 
 ```
-novice clip -> chunker (3 s windows, 0.5 s overlap, H.264 + 3-4 keyframes, chunks processed concurrently)
-  -> SAM 3.1 (Meta Model API / self-hosted)  hand, tomato, plate (one request each, in parallel),
+novice clip -> chunker (3 s windows, 0.5 s overlap, H.264 + 4 keyframes, chunks processed concurrently)
+  -> SAM 3.1 (hosted, Meta Model API; self-hosted SAM not built)  hand, tomato, plate (one request each, in parallel),
      stitched across chunks by IoU at the same timestamp in the overlap
   -> vision model  tracks + keyframes -> timestamped events + conf; VISION_BACKEND=glimmer (default,
-     self-hosted on the H100s, localhost:8000) or spark (Muse Spark Open on Baseten)
+     self-hosted on the H100s, localhost:8000; the replay CLI defaults to spark) or spark (Muse Spark Open on Baseten)
   -> step alignment (deterministic) + Muse Wonder  deviation verdicts, coaching text, ask-vs-flag
   -> overlay  video + protocol checklist + flags + source-frame refs
 ```
@@ -47,8 +47,27 @@ Real clips (CaptainCook4D recipe 12, Apache-2.0): manifest `https://files.catbox
 `url` of each clip into `data/clips/<id>.mp4`. The dataset's error annotations are used only as the answer key
 for scoring, never as pipeline input.
 
-## Status
+Fresh clean clips (final #22 code, 0 false asks/flags) and their stored sessions:
 
-See the `ledger` branch (`docs/ledger/`) for progress, decisions and test results. `MetaSam` and the Spark backend are implemented and
-smoke-tested on one chunk; the Glimmer backend is untested until the cluster server is up. Thresholds were tuned
-on a handful of clips (synthetic so far), so no general recall claim.
+| clip | video | stored session |
+|---|---|---|
+| 12_10 | https://files.catbox.moe/xf251u.mp4 | https://files.catbox.moe/tbig4p.json |
+| 12_2 | https://files.catbox.moe/t56l3h.mp4 | https://files.catbox.moe/kz7fu8.json |
+| 12_119 | https://files.catbox.moe/xe5dwu.mp4 | https://files.catbox.moe/x062ss.json |
+
+The 12_119 session ends with one end-of-clip skip ask for step 124. Manifest_v3: https://files.catbox.moe/7we43k.json
+
+## Status and results
+
+Both vision backends run in the pipeline (Spark Open hosted on Baseten: most runs; Glimmer 30B self-hosted on
+2x H100: 12_26 first 80 s and 12_17). Measured on CaptainCook4D recipe 12, one run per clip, small samples:
+a fresh set of 3 clean clips gave 0 false alarms with the final aligner; an earlier fresh set found 1 genuine
+detection of 9 annotated errors (before the last fixes); there are no fresh error clips for the final code, so
+there is no recall claim. Technique, quantity and spill errors are not detected. Details and caveats:
+
+- [docs/SUBMISSION.md](docs/SUBMISSION.md) write-up draft, results and limitations
+- [docs/DEMO.md](docs/DEMO.md) demo video storyboard, commands, fallback
+- [docs/RUNNING.md](docs/RUNNING.md) tests, replay, eval, Glimmer server, credentials
+
+Progress, decisions and test logs are on the `ledger` branch (`docs/ledger/`) and in the GitHub issues (#7 has the
+real-footage results). Thresholds and gate parameters were tuned on the development clips.
