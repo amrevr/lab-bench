@@ -45,7 +45,7 @@ def parse_events(text: str, t0: float = 0.0, t1: float = 1e9) -> list[Event]:
     if not m:
         raise ValueError("no JSON array in reply")
     out = []
-    for raw in json.loads(m.group(0)):
+    for raw in json.JSONDecoder().raw_decode(m.group(0))[0]:     # ignores trailing junk such as "[]]"
         ev = Event.model_validate(raw)
         ev.obj = ev.obj.lower().replace("_", " ")       # the aligner compares names exactly
         ev.target = ev.target.lower().replace("_", " ") if ev.target else None

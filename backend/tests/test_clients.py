@@ -26,6 +26,10 @@ class ClientTests(unittest.TestCase):
         (e,) = parse_events('[{"t_start":0,"t_end":1,"action":"place","obj":"Paper_Towel","target":"cutting_board"}]')
         self.assertEqual((e.obj, e.target), ("paper towel", "cutting board"))
 
+    def test_parse_events_ignores_trailing_junk(self):
+        self.assertEqual(parse_events("[]]"), [])            # a doubled closing bracket is not a parse failure
+        self.assertEqual(len(parse_events('[{"t_start":1,"t_end":2,"action":"cut","obj":"tomato"}]]')), 1)
+
     def test_parse_events_rejects_garbage(self):
         with self.assertRaises(ValueError):
             parse_events("no json here")
