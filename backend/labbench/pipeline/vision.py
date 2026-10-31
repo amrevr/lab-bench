@@ -89,7 +89,10 @@ class Vision:
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = urllib.request.Request(f"{self.base_url}/chat/completions", body, headers)
         with urllib.request.urlopen(req, timeout=60) as r:
-            choice = json.load(r)["choices"][0]
+            try:
+                choice = json.load(r)["choices"][0]
+            except (KeyError, IndexError, TypeError) as x:     # 200 with an error body or no choices
+                raise VisionError(f"malformed reply: {type(x).__name__}: {x}"[:200]) from x
         if not choice["message"].get("content"):      # the budget went on reasoning; the retry gets more room
             raise ValueError(f"empty reply (finish_reason={choice.get('finish_reason')})")
         return choice["message"]["content"]
