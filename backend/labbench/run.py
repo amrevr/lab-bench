@@ -6,7 +6,7 @@ import json
 import pathlib
 
 from .pipeline.align import Aligner
-from .schema import Event, Protocol
+from .schema import THRESHOLDS, Event, Protocol
 
 ROOT = pathlib.Path(__file__).resolve().parents[2] / "fixtures" / "synthetic"
 
@@ -15,11 +15,12 @@ def load_protocol(root: pathlib.Path) -> Protocol:
     return Protocol.model_validate_json((root / "protocol.json").read_text())
 
 
-def run_clip(root: pathlib.Path, clip: str) -> dict:
+def run_clip(root: pathlib.Path, clip: str, thresholds: dict = THRESHOLDS) -> dict:
     protocol = load_protocol(root)
     events = [Event.model_validate(e) for e in json.loads((root / clip / "events.json").read_text())]
-    al = Aligner(protocol)
-    for ev in sorted(events, key=lambda e: e.t_end):
+    events.sort(key=lambda e: e.t_end)     # feed order = event_idx in verdict evidence
+    al = Aligner(protocol, thresholds)
+    for ev in events:
         al.feed(ev)
     al.finish(max((e.t_end for e in events), default=0.0) + 2)
     return {"clip": clip, "protocol": protocol.model_dump(),

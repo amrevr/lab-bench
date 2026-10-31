@@ -1,8 +1,9 @@
 """Muse Wonder: turn the aligner's findings into short coaching text.
 
 Wonder never sees video; it gets the protocol step and the event text. With no META_API_KEY it
-returns the aligner's own message, so the demo runs offline. The endpoint shape is an assumption
-(OpenAI-compatible) to be checked against the Meta Model API docs once the key lands.
+returns the aligner's own message, so the demo runs offline. Meta `/v1/responses`, model
+`muse-wonder-1.0`; the default reasoning effort is max and slow, `low` answers in ~2 s but needs
+max_output_tokens >= ~600 (reasoning tokens count) or it returns no text.
 """
 from __future__ import annotations
 
@@ -20,16 +21,18 @@ PROMPT = (
 
 
 def coach_text(v: Verdict) -> str:
-    key, base = os.environ.get("META_API_KEY"), os.environ.get("META_API_BASE")
-    if not key or not base:
+    key = os.environ.get("META_API_KEY")
+    if not key:
         return v.message
-    body = json.dumps({"model": os.environ.get("WONDER_MODEL", "muse-wonder"),
-                       "messages": [{"role": "user", "content": PROMPT.format(mode=v.mode, message=v.message)}],
-                       "max_tokens": 120}).encode()
-    req = urllib.request.Request(f"{base.rstrip('/')}/chat/completions", body,
+    base = os.environ.get("META_API_BASE", "https://api.meta.ai/v1")
+    body = json.dumps({"model": os.environ.get("WONDER_MODEL", "muse-wonder-1.0"),
+                       "reasoning": {"effort": "low"}, "max_output_tokens": 800,
+                       "input": PROMPT.format(mode=v.mode, message=v.message)}).encode()
+    req = urllib.request.Request(f"{base.rstrip('/')}/responses", body,
                                  {"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
-            return json.load(r)["choices"][0]["message"]["content"].strip() or v.message
+            parts = [c["text"] for o in json.load(r)["output"] if o["type"] == "message" for c in o["content"]]
+        return "".join(parts).strip() or v.message
     except Exception:
         return v.message
