@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+data/
+*.mp4
+.ssh-config
