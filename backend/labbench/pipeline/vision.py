@@ -122,5 +122,6 @@ class Vision:
                 msgs.append({"role": "user", "content": "That was not valid. Reply with only the JSON array."})
             except (urllib.error.URLError, TimeoutError, OSError) as x:         # 503s, resets, timeouts
                 err = f"request: {type(x).__name__}: {x}"[:200]
-                time.sleep(BACKOFF * (attempt + 1))
+                if attempt == 0:
+                    time.sleep(BACKOFF * (attempt + 1))
         raise VisionError(err)
