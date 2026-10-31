@@ -11,6 +11,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend"))
+from labbench.pipeline import align  # noqa: E402
 from labbench.eval import score_root  # noqa: E402
 from labbench.schema import ASK_THRESHOLD, FLAG_THRESHOLD, THRESHOLDS, VerdictKind  # noqa: E402
 
@@ -18,6 +19,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--root", type=pathlib.Path, default=ROOT / "fixtures" / "synthetic")
 ap.add_argument("--manifest", type=pathlib.Path)
 a = ap.parse_args()
+# thresholds alone leave the aligner's own gates on; open them too so weak verdicts get scored
+align.STRONG, align.MIN_CONF, align.ITEM_NEEDS_REPEAT = 0.0, 0.0, False
 results = score_root(a.root, a.manifest, thresholds={k: (0.0, 0.0) for k in VerdictKind})
 rows = [(r["clip"], v) for r in results for v in r["verdicts"]]
 for clip, v in rows:
