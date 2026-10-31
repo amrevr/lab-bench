@@ -29,7 +29,7 @@
   "obj": "mozzarella",
   "target": null,
   "technique": "tear",
-  "conf": 0.6,
+  "conf": 0.8,
   "sam_conf": 0.9,
   "track_ids": [
    "hand:1",

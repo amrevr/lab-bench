@@ -49,7 +49,10 @@ def parse_events(text: str, t0: float = 0.0, t1: float = 1e9) -> list[Event]:
         ev = Event.model_validate(raw)
         ev.obj = ev.obj.lower().replace("_", " ")       # the aligner compares names exactly
         ev.target = ev.target.lower().replace("_", " ") if ev.target else None
-        ev.t_start, ev.t_end = max(ev.t_start, t0), min(ev.t_end, t1)
+        if t0 > 0 and ev.t_end < t0:       # model answered window-relative: shift into clip time
+            ev.t_start, ev.t_end = ev.t_start + t0, ev.t_end + t0
+        ev.t_start = min(max(ev.t_start, t0), t1)       # then clamp, keeping t0 <= start <= end <= t1
+        ev.t_end = min(max(ev.t_end, ev.t_start), t1)
         out.append(ev)
     return out
 
@@ -89,7 +92,10 @@ class Vision:
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = urllib.request.Request(f"{self.base_url}/chat/completions", body, headers)
         with urllib.request.urlopen(req, timeout=60) as r:
-            choice = json.load(r)["choices"][0]
+            try:
+                choice = json.load(r)["choices"][0]
+            except (KeyError, IndexError, TypeError) as x:     # 200 with an error body or no choices
+                raise VisionError(f"malformed reply: {type(x).__name__}: {x}"[:200]) from x
         if not choice["message"].get("content"):      # the budget went on reasoning; the retry gets more room
             raise ValueError(f"empty reply (finish_reason={choice.get('finish_reason')})")
         return choice["message"]["content"]
@@ -116,5 +122,6 @@ class Vision:
                 msgs.append({"role": "user", "content": "That was not valid. Reply with only the JSON array."})
             except (urllib.error.URLError, TimeoutError, OSError) as x:         # 503s, resets, timeouts
                 err = f"request: {type(x).__name__}: {x}"[:200]
-                time.sleep(BACKOFF * (attempt + 1))
+                if attempt == 0:
+                    time.sleep(BACKOFF * (attempt + 1))
         raise VisionError(err)

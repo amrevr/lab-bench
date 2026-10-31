@@ -53,7 +53,7 @@ fetch(sessionUrl).then(r => r.json()).then(s => {
   S = s; $('title').textContent = s.clip + ' - ' + s.protocol.name;
   dur = Math.max(...s.events.map(e => e.t_end), ...s.verdicts.map(x => x.t)) + 3;
   s.protocol.steps.forEach(st => { const li = document.createElement('li'); li.id = 's' + st.id;
-    li.innerHTML = '<span class="dot"></span><span>' + st.label + '</span>'; $('steps').appendChild(li); });
+    li.innerHTML = '<span class="dot"></span><span></span>'; li.lastChild.textContent = st.label; $('steps').appendChild(li); });
   if (videoUrl) { v.src = videoUrl; v.hidden = false; $('nov').hidden = true;
     v.onloadedmetadata = () => { dur = Math.max(dur, v.duration); ticks(); }; }
   ticks(); render();
@@ -69,7 +69,8 @@ function render() {
     li.className = vs.some(x => x.mode === 'flag') ? 'flag' : vs.length ? 'ask' : ok || done.has(st.action + '|' + st.obj) ? 'done' : ''; });
   const recent = seen.filter(x => x.mode !== 'ok' && n - x.t < 6).pop(), tt = $('toast');
   if (recent) { tt.hidden = false; tt.className = 'toast ' + recent.mode;
-    tt.innerHTML = '<b>' + (recent.mode === 'ask' ? 'Quick check' : 'Heads up') + '</b>' + (recent.coach || recent.message);
+    tt.innerHTML = '<b></b>'; tt.firstChild.textContent = recent.mode === 'ask' ? 'Quick check' : 'Heads up';
+    tt.append(recent.coach || recent.message);
     if (shown !== recent) { shown = recent;
       const fr = recent.evidence.flatMap(e => e.frame_t.map(f => [e.clip || S.clip, f]));
       $('why').textContent = 'Source frames at ' + (fr.map(([, f]) => f.toFixed(1) + 's').join(', ') || 'n/a') + ' (' + recent.kind + ', conf ' + recent.conf + ')';
