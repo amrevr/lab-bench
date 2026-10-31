@@ -11,6 +11,8 @@ from ..schema import THRESHOLDS, Event, Evidence, Protocol, Step, Verdict, Verdi
 SYNONYMS = {"tray": "plate", "platter": "plate", "dish": "plate"}   # a cutting board is not a serving plate
 ORDER_GAP = 3.0    # s (one chunk): events closer than this in time are not ordered, window timing is that coarse
 STRONG = 0.8       # an event this confident backs a verdict alone; weaker ones need a second window (false asks maxed at 0.72)
+MIN_CONF = 0.5     # events below this confidence are ignored for ordering/attempts
+ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be corroborated
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
 ACTION_SYNONYMS = {"season": "sprinkle", "garnish": "sprinkle", "drizzle": "pour"}
 SPRINKLE_ACTIONS = {"sprinkle", "pour"}   # the obj of these is the ingredient; the vision model often names what it lands on
@@ -149,9 +151,10 @@ class Aligner:
         cur = (self._n, ev)
         self._n += 1
         step, how = self._find(ev)
-        if step is None or not self._consistent(step, ev) or any(a not in self.done for a in step.after):
+        if step is None or not self._consistent(step, ev):
             return []
-        if how == "item" and not (ev.conf >= STRONG and self._corroborated(ev)):   # an unknown noun is noise until it is strong and repeated
+        ready = all(a in self.done for a in step.after)   # else attempted anyway: the missing prerequisite is what gets flagged
+        if how == "item" and not (ev.conf >= STRONG and (not ITEM_NEEDS_REPEAT or self._corroborated(ev))):   # an unknown noun is noise until it is strong and repeated
             return []
         out: list[Verdict | None] = []
         t = ev.t_end
@@ -167,7 +170,10 @@ class Aligner:
             out.append(self._emit(t, VerdictKind.WRONG_ITEM, step.id,
                 (f"Step {step.id} calls for {step.obj}, but this looks like {ev.obj}.",
                  f"Step {step.id} calls for {step.obj}; did you use {ev.obj}?"), [cur]))
-        if ev.conf >= 0.5:
+        if ev.conf >= MIN_CONF:
+            if step.id not in self.done:   # a step done before its prerequisite was only an earlier, different action: not this step
+                for d in [d for d in self.done if step.id in self.steps[self.pos[d]].after]:
+                    del self.done[d]
             later = sorted((d for d in self.done if self.pos[d] > self.pos[step.id]
                             and not (step.group and step.group == self.steps[self.pos[d]].group)
                             and ev.t_start - self.done[d][1].t_end >= ORDER_GAP), key=self.pos.get)
@@ -187,7 +193,7 @@ class Aligner:
                     if len(after) >= self.SKIP_AFTER:
                         out.append(self._emit(t, VerdictKind.SKIPPED, m.id,
                             (f"Step {m.id} ('{m.label}') looks skipped.", f"Did you do '{m.label}' (step {m.id})?"), after))
-            if how == "exact" and fresh and not any(out):
+            if how == "exact" and fresh and ready and not any(out):
                 out.append(self._emit(t, VerdictKind.ON_TRACK, step.id, (f"Step {step.id} ('{step.label}') done.",) * 2, [cur]))
         return [v for v in out if v]
 

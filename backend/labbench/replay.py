@@ -43,6 +43,18 @@ def pct(xs: list[float], p: float) -> float:
     return xs[min(len(xs) - 1, int(p * len(xs)))]
 
 
+def persist_tracks(prev, tracks, counts: dict[str, int]) -> dict[str, str]:
+    """Rename tracks in place to replay-wide ids; return raw id -> persistent id (for event track_ids)."""
+    link = link_tracks(prev, tracks)
+    for t in tracks:
+        if link[t.id] == t.id:      # unmatched: fresh id ('#' never occurs in SAM ids, so no collisions)
+            counts[t.label] = counts.get(t.label, 0) + 1
+            link[t.id] = f"{t.label}#{counts[t.label]}"
+    for t in tracks:
+        t.id = link[t.id]
+    return link
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--clip", type=pathlib.Path, required=True)
@@ -94,6 +106,7 @@ def main() -> None:
             done[0] += 1
 
     done, events, prev, errors, aborted = [0], [], [], [], False
+    counts: dict[str, int] = {}
     stats = {"windows": 0, "vision_failed": 0, "vision_idle": 0, "sam_failed": 0}
     session = {"clip": clip, "protocol": protocol.model_dump(), "events": events, "verdicts": al.verdicts}
     wonder_pool = ThreadPoolExecutor(2)
@@ -139,7 +152,7 @@ def main() -> None:
                 errors.append(f"{s:.1f}-{e:.1f}: {err}")
                 print(f"window {s:.1f}-{e:.1f} failed: {err}", file=sys.stderr)
             attach_tracks(evs, tracks)
-            link = link_tracks(prev, tracks)
+            link = persist_tracks(prev, tracks, counts)
             for ev in evs:
                 ev.track_ids = [link.get(t, t) for t in ev.track_ids]
             prev = tracks or prev

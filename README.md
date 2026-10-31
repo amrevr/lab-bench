@@ -47,6 +47,16 @@ Real clips (CaptainCook4D recipe 12, Apache-2.0): manifest `https://files.catbox
 `url` of each clip into `data/clips/<id>.mp4`. The dataset's error annotations are used only as the answer key
 for scoring, never as pipeline input.
 
+Fresh clean clips (final #22 code, 0 false asks/flags) and their stored sessions:
+
+| clip | video | stored session |
+|---|---|---|
+| 12_10 | https://files.catbox.moe/xf251u.mp4 | https://files.catbox.moe/tbig4p.json |
+| 12_2 | https://files.catbox.moe/t56l3h.mp4 | https://files.catbox.moe/kz7fu8.json |
+| 12_119 | https://files.catbox.moe/xe5dwu.mp4 | https://files.catbox.moe/x062ss.json |
+
+The 12_119 session ends with one end-of-clip skip ask for step 124. Manifest_v3: https://files.catbox.moe/7we43k.json
+
 ## Status and results
 
 Both vision backends run in the pipeline (Spark Open hosted on Baseten: most runs; Glimmer 30B self-hosted on
