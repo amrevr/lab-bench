@@ -38,10 +38,10 @@ def process_chunks(total: float, fn, workers: int = 3, length: float = 3.0, over
         return [f.result() for f in futs]
 
 
-def cut_chunk(src: pathlib.Path, start: float, end: float, dst: pathlib.Path, height: int = 480) -> pathlib.Path:
+def cut_chunk(src: pathlib.Path, start: float, end: float, dst: pathlib.Path, height: int = 480, fps: int | None = None) -> pathlib.Path:
     dst.parent.mkdir(parents=True, exist_ok=True)
     _run([FFMPEG, "-y", "-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src), "-an",
-          "-vf", f"scale=-2:{height}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
+          "-vf", f"scale=-2:{height}", *(["-r", str(fps)] if fps else []), "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
           "-movflags", "+faststart", str(dst)])
     return dst
 
@@ -54,7 +54,9 @@ def keyframes(src: pathlib.Path, start: float, end: float, out_dir: pathlib.Path
     for i in range(n):
         t = start + (end - start) * (i + 0.5) / n
         p = out_dir / f"{t:08.2f}.jpg"
+        p.unlink(missing_ok=True)    # a frame left by an earlier run must not pass the exists() check
         _run([FFMPEG, "-y", "-ss", f"{t:.2f}", "-i", str(src), "-frames:v", "1",
               "-vf", f"scale={width}:-2", "-q:v", "4", str(p)])
-        frames.append((t, p))
+        if p.exists():   # ffmpeg exits 0 but writes nothing when t is past the last decodable frame
+            frames.append((t, p))
     return frames

@@ -46,6 +46,8 @@ class Step(BaseModel):
     target: Optional[str] = None
     technique: Optional[str] = None
     optional: bool = False
+    group: Optional[str] = None      # steps sharing a group may be done in any order (e.g. seasonings)
+    after: list[int] = []            # step ids that must have been attempted first; an event earlier than that is not this step
 
     @model_validator(mode="before")
     @classmethod
@@ -85,6 +87,10 @@ class Verdict(BaseModel):
     mode: str                        # "flag" | "ask" | "ok"
     message: str
     evidence: list[Evidence] = []
+    coach: Optional[str] = None      # Muse Wonder wording; arrives after the verdict, never gates it
+    closed_t: Optional[float] = None   # replay: video time (s) the chunk behind this verdict closed
+    emitted_at: Optional[float] = None  # replay: wall-clock (epoch s) the aligner emitted it
+    latency_s: Optional[float] = None   # replay: emitted_at minus the wall time the chunk was fed
 
     @model_validator(mode="before")
     @classmethod
