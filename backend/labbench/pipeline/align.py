@@ -8,8 +8,17 @@ from __future__ import annotations
 from ..schema import THRESHOLDS, Event, Evidence, Protocol, Step, Verdict, VerdictKind, mode_for
 
 
+SYNONYMS = {"tray": "plate", "platter": "plate", "dish": "plate"}   # a cutting board is not a serving plate
+ORDER_GAP = 3.0    # s (one chunk): events closer than this in time are not ordered, window timing is that coarse
+
+
+def _norm(x: str) -> str:
+    x = x.lower().strip()
+    return SYNONYMS.get(x, x)
+
+
 def _same(a: str | None, b: str | None) -> bool:
-    return bool(a) and bool(b) and a.lower().strip() == b.lower().strip()
+    return bool(a) and bool(b) and _norm(a) == _norm(b)
 
 
 class Aligner:
@@ -26,20 +35,25 @@ class Aligner:
     def __init__(self, protocol: Protocol, thresholds: dict = THRESHOLDS):
         self.thresholds, self._n = thresholds, 0
         self.steps = protocol.steps
+        self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n}
         self.pos = {s.id: i for i, s in enumerate(protocol.steps)}   # step ids need not be sorted
         self.done: dict[int, tuple[int, Event]] = {}   # step id -> (event idx, event) that attempted it
         self.verdicts: list[Verdict] = []
         self._reported: set[tuple[VerdictKind, int]] = set()
 
     def _find(self, ev: Event) -> tuple[Step | None, str]:
-        """Return (step, how) where how is exact | technique | item | none."""
-        for s in self.steps:
-            if s.action == ev.action and _same(s.obj, ev.obj) and (
-                s.target is None or ev.target is None or _same(s.target, ev.target)
-            ) and s.id not in self.done:
-                if s.technique and ev.technique and not _same(s.technique, ev.technique):
-                    return s, "technique"
-                return s, "exact"
+        """Return (step, how) where how is exact | technique | item | none.
+
+        Action + object identify the step. The target is soft: any destination the recipe itself names
+        (a step's target or object, synonyms folded) is accepted and only breaks ties between steps;
+        a place the recipe never mentions (fridge, cutting board) means this is some other action."""
+        cands = [s for s in self.steps if (ev.target is None or s.target is None or _norm(ev.target) in self.names)
+                 and s.action == ev.action and _same(s.obj, ev.obj) and s.id not in self.done]
+        if cands:
+            s = next((c for c in cands if _same(c.target, ev.target)), cands[0])
+            if s.technique and ev.technique and not _same(s.technique, ev.technique):
+                return s, "technique"
+            return s, "exact"
         # Same action, same destination, different object -> wrong item for the next such step.
         for s in self.steps:
             if s.action == ev.action and not _same(s.obj, ev.obj) and s.id not in self.done and (
@@ -81,7 +95,9 @@ class Aligner:
             out.append(self._emit(t, VerdictKind.WRONG_ITEM, step.id,
                 f"Step {step.id} calls for {step.obj}, but this looks like {ev.obj}.", [cur]))
         if ev.conf >= 0.5:
-            later = sorted((d for d in self.done if self.pos[d] > self.pos[step.id]), key=self.pos.get)
+            later = sorted((d for d in self.done if self.pos[d] > self.pos[step.id]
+                            and not (step.group and step.group == self.steps[self.pos[d]].group)
+                            and ev.t_start - self.done[d][1].t_end >= ORDER_GAP), key=self.pos.get)
             if later:
                 first = next(s for s in self.steps if s.id == later[0])
                 out.append(self._emit(t, VerdictKind.WRONG_ORDER, first.id,

@@ -16,14 +16,14 @@ def fake_events(self, kf, tracks, t0, t1, clip=None):
 
 
 class ReplayTests(unittest.TestCase):
-    def run_replay(self, *extra):
+    def run_replay(self, *extra, vision=fake_events, track=None):
         out = pathlib.Path(tempfile.mkdtemp()) / "s.json"
         argv = ["replay", "--clip", "/x/12_26.mp4", "--protocol", str(PROTOCOL), "--backend", "spark", "--start", "0",
                 "--end", "8", "--pace", "fast", "--out", str(out), "--workdir", str(out.parent), *extra]
         with mock.patch("sys.argv", argv), mock.patch.dict(os.environ, {"META_API_KEY": ""}), \
                 mock.patch.object(replay.chunker, "cut_chunk"), mock.patch.object(replay.chunker, "keyframes", return_value=[]), \
-                mock.patch.object(replay.MetaSam, "track", lambda self, c, p, t0: setattr(self, "frames", self.frames + 150) or []), \
-                mock.patch.object(replay.Vision, "events", fake_events), self.assertRaises(SystemExit) as ex:
+                mock.patch.object(replay.MetaSam, "track", track or (lambda self, c, p, t0, errors=None: setattr(self, "frames", self.frames + 150) or [])), \
+                mock.patch.object(replay.Vision, "events", vision), self.assertRaises(SystemExit) as ex:
             replay.main()
         return ex.exception.code, out
 
@@ -43,6 +43,24 @@ class ReplayTests(unittest.TestCase):
         code, out = self.run_replay("--max-spend", "0.07")            # 4 windows cost $0.12
         self.assertIn("over --max-spend", code)
         self.assertFalse(out.exists())
+
+    def test_run_block_counts_failed_and_idle_windows(self):
+        from labbench.pipeline.vision import VisionError
+
+        def flaky(self, kf, tracks, t0, t1, clip=None):
+            if t0 == 2.5:
+                raise VisionError("request: HTTPError: 503")
+            return fake_events(self, kf, tracks, t0, t1, clip)
+
+        def track(self, c, p, t0, errors=None):
+            if t0 == 5.0:
+                errors.append("hand: HTTPError: HTTP Error 503")
+            return []
+        code, out = self.run_replay("--max-spend", "1", vision=flaky, track=track)
+        run = json.loads(out.read_text())["run"]
+        self.assertEqual((run["windows"], run["vision_failed"], run["vision_idle"], run["sam_failed"]), (4, 1, 2, 1))
+        self.assertEqual(len(run["errors"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,7 @@ import os
 import pathlib
 import re
 import threading
+import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -71,7 +72,7 @@ class MetaSam:
                  fps: float = 30.0, timeout: float = 120):
         self.api_key = api_key or os.environ.get("META_API_KEY", "")
         self.base_url = (base_url or os.environ.get("META_API_BASE", "https://api.meta.ai/v1")).rstrip("/")
-        self.model, self.fps, self.timeout = model, fps, timeout
+        self.model, self.fps, self.timeout, self.backoff = model, fps, timeout, 1.5
         self.frames = 0                   # billed frames so far (usage.video_frames_processed), all requests
         self._lock = threading.Lock()
 
@@ -100,13 +101,30 @@ class MetaSam:
                     raise RuntimeError(f"SAM request failed for {concept!r}: {json.dumps(ev)[:300]}")
         return "".join(out)       # empty stream = no match, not an error
 
-    def track(self, chunk, prompts, t0):
+    def _retry(self, data_url: str, concept: str) -> str:
+        try:
+            return self._request(data_url, concept)
+        except Exception:                      # 503s are common: one retry after a backoff
+            time.sleep(self.backoff)
+            return self._request(data_url, concept)
+
+    def track(self, chunk, prompts, t0, errors: list[str] | None = None):
+        """Tracks for every concept that answered; a concept that fails twice adds a line to `errors`
+        (an empty stream is "not found", a failure is not the same thing)."""
         chunk = pathlib.Path(chunk)
         if chunk.stat().st_size > MAX_VIDEO_BYTES:
             raise ValueError(f"{chunk} is over the 50 MiB API limit")
         data_url = "data:video/mp4;base64," + base64.b64encode(chunk.read_bytes()).decode()
+
+        def one(c):
+            try:
+                return self._retry(data_url, c)
+            except Exception as x:
+                (errors if errors is not None else []).append(f"{c}: {type(x).__name__}: {x}"[:200])
+                return ""
+
         with ThreadPoolExecutor(max(1, len(prompts))) as ex:      # one request per concept, in parallel
-            texts = list(ex.map(lambda c: self._request(data_url, c), prompts))
+            texts = list(ex.map(one, prompts))
         return [t for c, text in zip(prompts, texts) for t in parse_stream(text, c, t0, self.fps)]
 
 

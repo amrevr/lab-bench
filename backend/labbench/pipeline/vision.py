@@ -11,6 +11,8 @@ import json
 import os
 import pathlib
 import re
+import time
+import urllib.error
 import urllib.request
 
 from pydantic import ValidationError
@@ -23,7 +25,7 @@ BACKENDS = {
     "glimmer": (os.environ.get("GLIMMER_BASE_URL", "http://localhost:8000/v1"), "glimmer", "GLIMMER_API_KEY"),
     "spark": ("https://inference.baseten.co/v1", "meta-models/muse-spark-open-1026", "BASETEN_API_KEY"),
 }
-
+BACKOFF = 1.5     # seconds before the retry of a failed request
 
 SYSTEM = (
     "You watch short cooking-bench clips as keyframes plus object-track summaries. Reply with ONLY a "
@@ -32,6 +34,10 @@ SYSTEM = (
     "not the paper towel or the hands); technique is the method (slice, dice, tear), never the tool. conf in 0..1; lower it when unsure. "
     "Return [] if nothing is happening."
 )
+
+
+class VisionError(Exception):
+    """The reply was missing, unparseable, or the request failed, twice. [] from `events` means idle."""
 
 
 def parse_events(text: str, t0: float = 0.0, t1: float = 1e9) -> list[Event]:
@@ -94,6 +100,7 @@ class Vision:
             content += [{"type": "text", "text": f"t={t:.1f}s"},
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}]
         msgs = [{"role": "system", "content": self.system}, {"role": "user", "content": content}]
+        err = "no attempt"
         for attempt in range(2):
             try:
                 evs = parse_events(self._chat(msgs), t0, t1)
@@ -101,6 +108,10 @@ class Vision:
                     e.frame_refs, e.clip, e.chunk = [t for t, _ in keyframes], clip, [t0, t1]
                 attach_tracks(evs, tracks)
                 return evs
-            except (ValueError, ValidationError, json.JSONDecodeError):
+            except (ValueError, ValidationError, json.JSONDecodeError) as x:   # empty / unparseable reply
+                err = f"unparseable: {x}"[:200]
                 msgs.append({"role": "user", "content": "That was not valid. Reply with only the JSON array."})
-        return []
+            except (urllib.error.URLError, TimeoutError, OSError) as x:         # 503s, resets, timeouts
+                err = f"request: {type(x).__name__}: {x}"[:200]
+                time.sleep(BACKOFF * (attempt + 1))
+        raise VisionError(err)

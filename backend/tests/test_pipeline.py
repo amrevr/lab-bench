@@ -13,6 +13,44 @@ def non_ok(session):
     return [v for v in session["verdicts"] if v["mode"] != "ok"]
 
 
+def _protocol():
+    st = lambda i, a, o, t=None, g=None: Step(id=i, label=f"s{i}", action=a, obj=o, target=t, group=g)
+    return [st(1, "cut", "tomato"), st(2, "place", "tomato", "plate"), st(3, "sprinkle", "salt", "plate", "s"),
+            st(4, "sprinkle", "pepper", "plate", "s")]
+
+
+def _feed(events):
+    from labbench.schema import Protocol
+    al = Aligner(Protocol(name="p", source_clip="c", steps=_protocol()))
+    for e in events:
+        al.feed(Event(**e))
+    return [(v.kind.value, v.step_id) for v in al.verdicts if v.mode != "ok"]
+
+
+class AlignerMatchingTests(unittest.TestCase):
+    def test_target_is_soft_for_known_destinations_and_synonyms(self):
+        for target in ("tray", "tomato", None):       # tray = plate; the recipe names tomato; unknown = absent
+            self.assertEqual(_feed([dict(t_start=0, t_end=1, action="sprinkle", obj="salt", target=target, conf=0.9)]), [])
+        self.assertEqual(_feed([dict(t_start=0, t_end=1, action="cut", obj="tomato", conf=0.9),
+                                dict(t_start=1, t_end=2, action="place", obj="tomato", target="platter", conf=0.9)]), [])
+
+    def test_unknown_destination_is_a_different_action(self):
+        # putting the tomato in the fridge is not "place the slices on the plate"
+        self.assertEqual(_feed([dict(t_start=0, t_end=1, action="place", obj="tomato", target="fridge", conf=0.9),
+                                dict(t_start=5, t_end=6, action="cut", obj="tomato", conf=0.9)]), [])
+
+    def test_events_within_one_chunk_are_not_ordered(self):
+        place = dict(t_start=0, t_end=1, action="place", obj="tomato", target="plate", conf=0.9)
+        cut = lambda t: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", conf=0.9)
+        self.assertEqual(_feed([place, cut(1)]), [])
+        self.assertEqual(_feed([place, cut(10)]), [("wrong_order", 2)])
+
+    def test_group_steps_may_come_in_any_order(self):
+        ev = lambda t, o: dict(t_start=t, t_end=t + 1, action="sprinkle", obj=o, target="plate", conf=0.9)
+        self.assertNotIn(("wrong_order", 4), _feed([ev(0, "pepper"), ev(20, "salt")]))
+        self.assertIn(("wrong_order", 4), _feed([ev(0, "pepper"), dict(t_start=20, t_end=21, action="place", obj="tomato", target="plate", conf=0.9)]))
+
+
 class PipelineTests(unittest.TestCase):
     def test_expert_run_is_clean(self):
         s = run_clip(ROOT, "12_5")

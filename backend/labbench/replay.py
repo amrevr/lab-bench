@@ -30,7 +30,7 @@ os.environ.setdefault("FFMPEG", imageio_ffmpeg.get_ffmpeg_exe())   # static buil
 from .pipeline import chunker  # noqa: E402
 from .pipeline.align import Aligner  # noqa: E402
 from .pipeline.sam import CONCEPTS, MetaSam, link_tracks  # noqa: E402
-from .pipeline.vision import Vision, attach_tracks  # noqa: E402
+from .pipeline.vision import Vision, VisionError, attach_tracks  # noqa: E402
 from .pipeline.wonder import coach_text  # noqa: E402
 from .schema import Protocol  # noqa: E402
 
@@ -69,20 +69,32 @@ def main() -> None:
     if len(wins) * est * FRAME_COST > a.max_spend:
         sys.exit("estimate is over --max-spend; shorten the range or lower --fps/--height")
 
+    def see(kf, s, e):
+        """Vision events, or (None, why) when the reply failed: idle ([]) and failed are different."""
+        try:
+            return vision.events(kf, [], s, e, clip), None
+        except VisionError as x:
+            return [], str(x)
+
     def work_on(i: int, s: float, e: float):
+        """-> (tracks, events, health); health = {"vision": error or None, "sam": [failed concepts]}."""
+        h = {"vision": None, "sam": []}
         try:
             chunk = chunker.cut_chunk(a.clip, s, e, work / clip / f"chunk{i:04d}.mp4", a.height, a.fps)
             kf = chunker.keyframes(a.clip, s, e, work / "frames" / clip)
             with ThreadPoolExecutor(2) as ex:                     # SAM and the vision call overlap (#10)
-                ev = ex.submit(vision.events, kf, [], s, e, clip)
-                tracks = sam.track(chunk, list(CONCEPTS), s)
-                return tracks, ev.result(), None
+                ev = ex.submit(see, kf, s, e)
+                tracks = sam.track(chunk, list(CONCEPTS), s, h["sam"])
+                evs, h["vision"] = ev.result()
+                return tracks, evs, h
         except Exception as x:   # one bad window must not end the replay
-            return [], [], f"{type(x).__name__}: {x}"
+            h["vision"] = f"{type(x).__name__}: {x}"
+            return [], [], h
         finally:
             done[0] += 1
 
     done, events, prev, errors, aborted = [0], [], [], [], False
+    stats = {"windows": 0, "vision_failed": 0, "vision_idle": 0, "sam_failed": 0}
     session = {"clip": clip, "protocol": protocol.model_dump(), "events": events, "verdicts": al.verdicts}
     wonder_pool = ThreadPoolExecutor(2)
     wall0 = time.time()
@@ -118,8 +130,12 @@ def main() -> None:
         threading.Thread(target=submit_windows, args=(pool,), daemon=True).start()
         while item := q.get():                                    # window order, so the aligner sees time order
             s, e, fed_at, f = item
-            tracks, evs, err = f.result()
-            if err:
+            tracks, evs, h = f.result()
+            stats["windows"] += 1
+            stats["vision_idle"] += not evs and not h["vision"]
+            stats["vision_failed"] += bool(h["vision"])
+            stats["sam_failed"] += len(h["sam"])
+            for err in ([f"vision: {h['vision']}"] if h["vision"] else []) + [f"sam {x}" for x in h["sam"]]:
                 errors.append(f"{s:.1f}-{e:.1f}: {err}")
                 print(f"window {s:.1f}-{e:.1f} failed: {err}", file=sys.stderr)
             attach_tracks(evs, tracks)
@@ -139,9 +155,11 @@ def main() -> None:
     session["verdicts"] = [v.model_dump(mode="json") for v in al.verdicts]
     session["run"] = {"backend": a.backend, "pace": a.pace, "start": a.start, "end": a.end, "fps": a.fps,
                       "height": a.height, "billed_frames": sam.frames, "cost_usd": round(sam.frames * FRAME_COST, 3),
-                      "errors": errors, "aborted": aborted}
+                      "errors": errors, "aborted": aborted, **stats}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(session, indent=1))
+    print(f"windows {stats['windows']}: vision failed {stats['vision_failed']}, idle {stats['vision_idle']}, "
+          f"SAM requests failed {stats['sam_failed']}")
     print(f"wrote {a.out}: {len(events)} events, {len(al.verdicts)} verdicts, cost ${sam.frames * FRAME_COST:.2f}"
           + (f", flag latency p50 {pct(lat, .5):.1f}s p90 {pct(lat, .9):.1f}s" if lat else ""))
     sys.exit(2 if aborted else 0)
