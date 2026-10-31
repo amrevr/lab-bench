@@ -46,6 +46,8 @@ class Step(BaseModel):
     target: Optional[str] = None
     technique: Optional[str] = None
     optional: bool = False
+    group: Optional[str] = None      # steps sharing a group may be done in any order (e.g. seasonings)
+    after: list[int] = []            # step ids that must have been attempted first; an event earlier than that is not this step
 
     @model_validator(mode="before")
     @classmethod

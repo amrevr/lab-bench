@@ -3,12 +3,15 @@ import json
 import threading
 import time
 import os
+import pathlib
+import tempfile
 import unittest
+import urllib.error
 from unittest import mock
 
 from labbench.pipeline.chunker import process_chunks, windows
-from labbench.pipeline.sam import Track, link_tracks, parse_stream
-from labbench.pipeline.vision import Vision, parse_events
+from labbench.pipeline.sam import MetaSam, Track, link_tracks, parse_stream
+from labbench.pipeline.vision import Vision, VisionError, parse_events
 from labbench.pipeline.wonder import coach_text
 from labbench.schema import Verdict, VerdictKind
 
@@ -108,6 +111,7 @@ class ClientTests(unittest.TestCase):
                       Track("plate:3", "plate", conf=0.5)]
             (e,) = v.events([], tracks, 0.0, 3.0, clip="c1")
             self.assertEqual(len(seen), 2)                  # first reply had no content -> retried once
+            self.assertGreater(seen[1][2]["max_tokens"], seen[0][2]["max_tokens"])   # empty = ran out on reasoning
             path, auth, body = seen[0]
             self.assertEqual((path, auth, body["model"]), ("/v1/chat/completions", "Bearer k", model))
             if backend == "glimmer":      # vLLM ignores reasoning_effort for Glimmer
@@ -118,10 +122,41 @@ class ClientTests(unittest.TestCase):
             self.assertGreaterEqual(body["max_tokens"], 600)
             self.assertEqual((e.clip, e.chunk, e.track_ids, e.sam_conf), ("c1", [0.0, 3.0], ["hand:1", "tomato:2"], 0.7))
 
-    def test_vision_gives_up_after_one_retry(self):
+    def test_vision_failure_is_raised_not_swallowed(self):
         url, seen = self._serve([{"content": "nope"}, {"content": "still nope"}])
-        self.assertEqual(Vision("glimmer", base_url=url).events([], [], 0, 3), [])
+        with self.assertRaises(VisionError):
+            Vision("glimmer", base_url=url).events([], [], 0, 3)
         self.assertEqual(len(seen), 2)
+
+    def test_vision_idle_is_empty_list_and_request_errors_retry_once(self):
+        v, ok = Vision("glimmer"), '[{"t_start":1,"t_end":3,"action":"cut","obj":"tomato"}]'
+        with mock.patch("labbench.pipeline.vision.BACKOFF", 0):
+            with mock.patch.object(Vision, "_chat", side_effect=["[]"]):
+                self.assertEqual(v.events([], [], 0, 3), [])           # a valid empty array is idle
+            err = urllib.error.HTTPError("u", 503, "Service Unavailable", {}, None)
+            with mock.patch.object(Vision, "_chat", side_effect=[err, ok]) as chat:
+                self.assertEqual(len(v.events([], [], 0, 3)), 1)
+                self.assertEqual(chat.call_count, 2)
+            with mock.patch.object(Vision, "_chat", side_effect=[err, err]), self.assertRaises(VisionError):
+                v.events([], [], 0, 3)
+
+    def test_sam_retries_a_failed_concept_once_and_reports_it(self):
+        sam, errors = MetaSam(api_key="k"), []
+        sam.backoff = 0
+        calls = []
+
+        def req(data_url, concept):
+            calls.append(concept)
+            if concept == "plate" or (concept == "hand" and calls.count("hand") == 1):
+                raise urllib.error.HTTPError("u", 503, "Service Unavailable", {}, None)
+            return ""
+        chunk = pathlib.Path(tempfile.mkdtemp()) / "c.mp4"
+        chunk.write_bytes(b"x")
+        with mock.patch.object(sam, "_request", req):
+            self.assertEqual(sam.track(chunk, ["hand", "plate"], 0.0, errors), [])
+        self.assertEqual(sorted(calls), ["hand", "hand", "plate", "plate"])     # both retried
+        self.assertEqual(len(errors), 1)                                         # only plate failed twice
+        self.assertIn("plate", errors[0])
 
 
 if __name__ == "__main__":
