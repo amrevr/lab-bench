@@ -31,7 +31,7 @@ python3 ../scripts/calibrate.py                        # hit vs false alarm per 
 
 ## Replay (real API calls, costs money)
 
-Needs `data/clips/<id>.mp4` (README) and keys. From `backend/`:
+Needs `data/clips/<id>.mp4` (README) and keys. Fresh clean clips, stored sessions and manifest_v3 are linked in the README. From `backend/`:
 
 ```
 python -m labbench.replay --clip ../data/clips/12_43.mp4 --protocol ../fixtures/recipe12/protocol.json \
