@@ -52,3 +52,11 @@ class CalibrationGateTests(unittest.TestCase):
         self.assertEqual(_run(self.steps, low).done, {})
         with mock.patch.multiple(align, STRONG=0.0, MIN_CONF=0.0):
             self.assertEqual(list(_run(self.steps, low).done), [1])
+
+
+class PrerequisiteOrderTests(unittest.TestCase):
+    def test_early_dependent_then_prerequisite_then_dependent_has_no_wrong_order(self):
+        al = _run(PrerequisiteTests.steps, [_ev(0, "place", "tomato", "plate"), _ev(10, "cut", "tomato", tech="slice"),
+                                            _ev(20, "place", "tomato", "plate")], finish=30)
+        self.assertEqual(sorted(al.done), [119, 120])
+        self.assertNotIn(VerdictKind.WRONG_ORDER, [v.kind for v in al.verdicts if v.mode != "ok"])

@@ -171,6 +171,9 @@ class Aligner:
                 (f"Step {step.id} calls for {step.obj}, but this looks like {ev.obj}.",
                  f"Step {step.id} calls for {step.obj}; did you use {ev.obj}?"), [cur]))
         if ev.conf >= MIN_CONF:
+            if step.id not in self.done:   # a step done before its prerequisite was only an earlier, different action: not this step
+                for d in [d for d in self.done if step.id in self.steps[self.pos[d]].after]:
+                    del self.done[d]
             later = sorted((d for d in self.done if self.pos[d] > self.pos[step.id]
                             and not (step.group and step.group == self.steps[self.pos[d]].group)
                             and ev.t_start - self.done[d][1].t_end >= ORDER_GAP), key=self.pos.get)
@@ -183,9 +186,6 @@ class Aligner:
                      "The expert did them the other way round."), [self.done[first.id], cur]))
             fresh = step.id not in self.done
             self.done.setdefault(step.id, cur)
-            if fresh:   # a step done before its prerequisite was only an earlier, different action: not this step
-                for d in [d for d in self.done if step.id in self.steps[self.pos[d]].after]:
-                    del self.done[d]
             for m in self.steps:
                 if self.pos[m.id] < self.pos[step.id] and m.id not in self.done and not m.optional:
                     after = [c for d, c in self.done.items() if self.pos[d] > self.pos[m.id]
