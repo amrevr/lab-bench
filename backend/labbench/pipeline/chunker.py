@@ -38,10 +38,10 @@ def process_chunks(total: float, fn, workers: int = 3, length: float = 3.0, over
         return [f.result() for f in futs]
 
 
-def cut_chunk(src: pathlib.Path, start: float, end: float, dst: pathlib.Path, height: int = 480) -> pathlib.Path:
+def cut_chunk(src: pathlib.Path, start: float, end: float, dst: pathlib.Path, height: int = 480, fps: int | None = None) -> pathlib.Path:
     dst.parent.mkdir(parents=True, exist_ok=True)
     _run([FFMPEG, "-y", "-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src), "-an",
-          "-vf", f"scale=-2:{height}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
+          "-vf", f"scale=-2:{height}", *(["-r", str(fps)] if fps else []), "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
           "-movflags", "+faststart", str(dst)])
     return dst
 

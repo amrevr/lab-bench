@@ -2,7 +2,9 @@ import http.server
 import json
 import threading
 import time
+import os
 import unittest
+from unittest import mock
 
 from labbench.pipeline.chunker import process_chunks, windows
 from labbench.pipeline.sam import Track, link_tracks, parse_stream
@@ -16,6 +18,10 @@ class ClientTests(unittest.TestCase):
         txt = 'Sure!\n[{"t_start":0,"t_end":9,"action":"cut","obj":"tomato","conf":0.7}]'
         (e,) = parse_events(txt, 2.0, 6.0)
         self.assertEqual((e.t_start, e.t_end), (2.0, 6.0))
+
+    def test_parse_events_normalizes_names(self):
+        (e,) = parse_events('[{"t_start":0,"t_end":1,"action":"place","obj":"Paper_Towel","target":"cutting_board"}]')
+        self.assertEqual((e.obj, e.target), ("paper towel", "cutting board"))
 
     def test_parse_events_rejects_garbage(self):
         with self.assertRaises(ValueError):
@@ -59,15 +65,27 @@ class ClientTests(unittest.TestCase):
 
     def test_wonder_offline_returns_finding(self):
         v = Verdict(t=1, step_id=1, kind=VerdictKind.SKIPPED, conf=0.9, mode="flag", message="m")
-        self.assertEqual(coach_text(v), "m")
+        with mock.patch.dict(os.environ, {"META_API_KEY": ""}):
+            self.assertEqual(coach_text(v), "m")
 
-    def _serve(self, replies):
+    def test_wonder_uses_responses_with_capped_effort(self):
+        v = Verdict(t=1, step_id=1, kind=VerdictKind.SKIPPED, conf=0.9, mode="flag", message="m")
+        reply = {"output": [{"type": "reasoning", "summary": []},
+                            {"type": "message", "content": [{"type": "output_text", "text": " Try step 1. "}]}]}
+        url, seen = self._serve([reply], wrap=False)
+        with mock.patch.dict(os.environ, {"META_API_KEY": "k", "META_API_BASE": url}):
+            self.assertEqual(coach_text(v), "Try step 1.")
+        path, auth, body = seen[0]
+        self.assertEqual((path, body["model"], body["reasoning"]), ("/v1/responses", "muse-wonder-1.0", {"effort": "low"}))
+        self.assertGreaterEqual(body["max_output_tokens"], 600)
+
+    def _serve(self, replies, wrap=True):
         seen = []
 
         class H(http.server.BaseHTTPRequestHandler):
             def do_POST(h):
                 seen.append((h.path, h.headers.get("Authorization"), json.loads(h.rfile.read(int(h.headers["Content-Length"])))))
-                body = json.dumps({"choices": [{"message": replies.pop(0)}]}).encode()
+                body = json.dumps({"choices": [{"message": replies.pop(0)}]} if wrap else replies.pop(0)).encode()
                 h.send_response(200)
                 h.send_header("Content-Length", str(len(body)))
                 h.end_headers()
@@ -92,7 +110,11 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(len(seen), 2)                  # first reply had no content -> retried once
             path, auth, body = seen[0]
             self.assertEqual((path, auth, body["model"]), ("/v1/chat/completions", "Bearer k", model))
-            self.assertEqual(body["reasoning_effort"], "low")
+            if backend == "glimmer":      # vLLM ignores reasoning_effort for Glimmer
+                self.assertEqual(body["chat_template_kwargs"], {"reasoning_strength": "low"})
+                self.assertNotIn("reasoning_effort", body)
+            else:
+                self.assertEqual(body["reasoning_effort"], "low")
             self.assertGreaterEqual(body["max_tokens"], 600)
             self.assertEqual((e.clip, e.chunk, e.track_ids, e.sam_conf), ("c1", [0.0, 3.0], ["hand:1", "tomato:2"], 0.7))
 

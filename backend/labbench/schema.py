@@ -85,6 +85,10 @@ class Verdict(BaseModel):
     mode: str                        # "flag" | "ask" | "ok"
     message: str
     evidence: list[Evidence] = []
+    coach: Optional[str] = None      # Muse Wonder wording; arrives after the verdict, never gates it
+    closed_t: Optional[float] = None   # replay: video time (s) the chunk behind this verdict closed
+    emitted_at: Optional[float] = None  # replay: wall-clock (epoch s) the aligner emitted it
+    latency_s: Optional[float] = None   # replay: emitted_at minus the wall time the chunk was fed
 
     @model_validator(mode="before")
     @classmethod

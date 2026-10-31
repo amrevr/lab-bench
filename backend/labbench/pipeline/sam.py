@@ -11,6 +11,7 @@ import json
 import os
 import pathlib
 import re
+import threading
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -71,6 +72,8 @@ class MetaSam:
         self.api_key = api_key or os.environ.get("META_API_KEY", "")
         self.base_url = (base_url or os.environ.get("META_API_BASE", "https://api.meta.ai/v1")).rstrip("/")
         self.model, self.fps, self.timeout = model, fps, timeout
+        self.frames = 0                   # billed frames so far (usage.video_frames_processed), all requests
+        self._lock = threading.Lock()
 
     def _request(self, data_url: str, concept: str) -> str:
         body = json.dumps({
@@ -90,6 +93,9 @@ class MetaSam:
                 ev = json.loads(line[5:])
                 if ev.get("type") == "response.output_text.delta":
                     out.append(ev["delta"])
+                elif ev.get("type") == "response.completed":
+                    with self._lock:
+                        self.frames += ev["response"].get("usage", {}).get("video_frames_processed", 0)
                 elif ev.get("type") in ("error", "response.failed", "response.error"):
                     raise RuntimeError(f"SAM request failed for {concept!r}: {json.dumps(ev)[:300]}")
         return "".join(out)       # empty stream = no match, not an error
