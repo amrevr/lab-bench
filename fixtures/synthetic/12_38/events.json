@@ -115,6 +115,29 @@
   ]
  },
  {
+  "t_start": 39.2,
+  "t_end": 42.8,
+  "action": "pour",
+  "obj": "balsamic vinegar",
+  "target": "plate",
+  "technique": null,
+  "conf": 0.9,
+  "sam_conf": 0.9,
+  "track_ids": [
+   "hand:1",
+   "balsamic vinegar:1"
+  ],
+  "frame_refs": [
+   37.0,
+   40.0
+  ],
+  "clip": "12_38",
+  "chunk": [
+   39.0,
+   42.0
+  ]
+ },
+ {
   "t_start": 44.0,
   "t_end": 50.0,
   "action": "sprinkle",
