@@ -111,6 +111,7 @@ class ClientTests(unittest.TestCase):
                       Track("plate:3", "plate", conf=0.5)]
             (e,) = v.events([], tracks, 0.0, 3.0, clip="c1")
             self.assertEqual(len(seen), 2)                  # first reply had no content -> retried once
+            self.assertGreater(seen[1][2]["max_tokens"], seen[0][2]["max_tokens"])   # empty = ran out on reasoning
             path, auth, body = seen[0]
             self.assertEqual((path, auth, body["model"]), ("/v1/chat/completions", "Bearer k", model))
             if backend == "glimmer":      # vLLM ignores reasoning_effort for Glimmer

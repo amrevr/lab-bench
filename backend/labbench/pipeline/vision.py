@@ -77,19 +77,22 @@ class Vision:
         self.system = SYSTEM + (f" Use these names where they fit: {', '.join(names)}." if names else "")
         self.api_key = api_key or os.environ.get(key_env, "")
 
-    def _chat(self, messages: list[dict]) -> str:
+    def _chat(self, messages: list[dict], max_tokens: int = 600) -> str:
         # Spark Open burns the whole budget on reasoning without reasoning_effort, and returns no content
         # under ~600 tokens; vLLM ignores that field for Glimmer, which wants the chat-template kwarg
         # instead (default is ~18 s and often truncated). Any `reasoning_content` in the reply is ignored.
         low = {"chat_template_kwargs": {"reasoning_strength": "low"}} if self.backend == "glimmer" else {"reasoning_effort": "low"}
         body = json.dumps({"model": self.model, "messages": messages, "temperature": 0.1,
-                           "max_tokens": 600, **low}).encode()
+                           "max_tokens": max_tokens, **low}).encode()
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = urllib.request.Request(f"{self.base_url}/chat/completions", body, headers)
         with urllib.request.urlopen(req, timeout=60) as r:
-            return json.load(r)["choices"][0]["message"].get("content") or ""
+            choice = json.load(r)["choices"][0]
+        if not choice["message"].get("content"):      # the budget went on reasoning; the retry gets more room
+            raise ValueError(f"empty reply (finish_reason={choice.get('finish_reason')})")
+        return choice["message"]["content"]
 
     def events(self, keyframes: list[tuple[float, pathlib.Path]], tracks: list[Track],
                t0: float, t1: float, clip: str | None = None) -> list[Event]:
@@ -103,7 +106,7 @@ class Vision:
         err = "no attempt"
         for attempt in range(2):
             try:
-                evs = parse_events(self._chat(msgs), t0, t1)
+                evs = parse_events(self._chat(msgs, 600 * (attempt + 1)), t0, t1)
                 for e in evs:
                     e.frame_refs, e.clip, e.chunk = [t for t, _ in keyframes], clip, [t0, t1]
                 attach_tracks(evs, tracks)
