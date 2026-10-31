@@ -37,7 +37,7 @@ clips = {
               [{"type": "omission", "step_id": 4, "t": 36.0}]),
     "12_41": ([CANON[0], CANON[1], CANON[4], CANON[2], CANON[3], CANON[5]], {},
               [{"type": "order", "step_id": 5, "t": 28.0}]),
-    "12_26": ([CANON[0], ("cut", "mozzarella", None, "tear")] + CANON[2:], {1: 0.6},
+    "12_26": ([CANON[0], ("cut", "mozzarella", None, "tear")] + CANON[2:], {1: 0.8},
               [{"type": "technique", "step_id": 2, "t": 18.0}]),
     "12_38": (CANON[:4] + [("pour", "balsamic vinegar", "plate", None)] + CANON[5:], {},
               [{"type": "wrong_ingredient", "step_id": 5, "t": 42.0}]),

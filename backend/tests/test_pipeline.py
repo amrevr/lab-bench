@@ -56,6 +56,32 @@ class AlignerMatchingTests(unittest.TestCase):
         self.assertIn(("wrong_order", 4), _feed([ev(0, "pepper"), dict(t_start=20, t_end=21, action="place", obj="tomato", target="plate", conf=0.9)]))
 
 
+class FalseAlarmControlTests(unittest.TestCase):
+    weak_cut = dict(t_start=0, t_end=1, action="cut", obj="tomato", technique="slice", conf=0.9, chunk=[0, 3])
+
+    def test_weak_lone_event_is_not_spoken_but_corroborated_one_is(self):
+        place = lambda t, w: dict(t_start=t, t_end=t + 1, action="place", obj="tomato", target="plate", conf=0.6, chunk=[w, w + 3])
+        cut = dict(t_start=10, t_end=11, action="cut", obj="tomato", technique="slice", conf=0.9, chunk=[10, 13])
+        self.assertEqual(_feed([place(0, 0), cut]), [])                                   # one 0.6 window: parked, then dropped
+        self.assertEqual(_feed([place(0, 0), cut, place(11.5, 11.5)]), [])                # too far from the first: still lone
+        self.assertEqual(_feed([place(0, 0), place(1.5, 1.5), cut]), [("wrong_order", 2)])    # seen in two windows
+        self.assertEqual(_feed([place(0, 0), cut, place(1.5, 1.5)]), [("wrong_order", 2)])    # corroborated later: spoken then
+
+    def test_weak_technique_needs_the_same_technique_again(self):
+        cut = lambda t, w, tech: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech, conf=0.6, chunk=[w, w + 3])
+        strong = {**self.weak_cut, "t_start": 0, "t_end": 1}
+        self.assertEqual(_feed([strong, cut(5, 5, "tear"), cut(6.5, 6.5, "slice")]), [])
+        self.assertEqual(_feed([strong, cut(5, 5, "tear"), cut(5.5, 5.5, "tear")]), [("wrong_technique", 1)])
+
+    def test_parked_skip_is_withdrawn_when_the_step_happens(self):
+        ev = lambda t, a, o, tg=None, c=0.6: dict(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=c, chunk=[t, t + 3])
+        ok = [ev(0, "cut", "tomato", c=0.9)]
+        later = [ev(10, "sprinkle", "salt", "plate"), ev(20, "sprinkle", "pepper", "plate")]    # weak: step 2 looks skipped, parked
+        again = [ev(10.5, "sprinkle", "salt", "plate"), ev(20.5, "sprinkle", "pepper", "plate")]   # corroboration arrives later
+        self.assertIn(("skipped_step", 2), _feed(ok + later + again))
+        self.assertNotIn(("skipped_step", 2), _feed(ok + later + [ev(15, "place", "tomato", "plate", 0.9)] + again))
+
+
 class PipelineTests(unittest.TestCase):
     def test_expert_run_is_clean(self):
         s = run_clip(ROOT, "12_5")
@@ -90,6 +116,8 @@ class PipelineTests(unittest.TestCase):
         # fixture 12_41: the order error spans two events; weaken one and the verdict follows it
         events = json.loads((ROOT / "12_41" / "events.json").read_text())
         events[2]["conf"] = 0.6
+        events.append({**events[2], "t_start": events[2]["t_end"], "t_end": events[2]["t_end"] + 1,   # weak events need a second window
+                       "chunk": [events[2]["chunk"][0] + 3, events[2]["chunk"][1] + 3]})
         al = Aligner(load_protocol(ROOT))
         for e in sorted(map(Event.model_validate, events), key=lambda e: e.t_end):
             al.feed(e)

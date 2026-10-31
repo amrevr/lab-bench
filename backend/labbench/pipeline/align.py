@@ -10,6 +10,12 @@ from ..schema import THRESHOLDS, Event, Evidence, Protocol, Step, Verdict, Verdi
 
 SYNONYMS = {"tray": "plate", "platter": "plate", "dish": "plate"}   # a cutting board is not a serving plate
 ORDER_GAP = 3.0    # s (one chunk): events closer than this in time are not ordered, window timing is that coarse
+STRONG = 0.8       # an event this confident backs a verdict alone; weaker ones need a second window (false asks maxed at 0.72)
+CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
+
+
+def _win(e: Event) -> tuple:
+    return tuple(e.chunk) if e.chunk else (e.t_start,)
 
 
 def _norm(x: str) -> str:
@@ -40,6 +46,8 @@ class Aligner:
         self.done: dict[int, tuple[int, Event]] = {}   # step id -> (event idx, event) that attempted it
         self.verdicts: list[Verdict] = []
         self._reported: set[tuple[VerdictKind, int]] = set()
+        self.seen: list[Event] = []
+        self.parked: dict[tuple[VerdictKind, int], tuple] = {}   # verdicts waiting for weak evidence to be corroborated
 
     def _find(self, ev: Event) -> tuple[Step | None, str]:
         """Return (step, how) where how is exact | technique | item | none.
@@ -67,10 +75,23 @@ class Aligner:
                 return s, "item"
         return None, "none"
 
+    def _backed(self, kind: VerdictKind, ev: Event) -> bool:
+        """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict) in another window."""
+        return ev.conf >= STRONG or any(
+            o is not ev and _win(o) != _win(ev) and o.action == ev.action and _same(o.obj, ev.obj)
+            and (o.target is None or ev.target is None or _same(o.target, ev.target))
+            and (kind != VerdictKind.WRONG_TECHNIQUE or _same(o.technique, ev.technique))
+            and max(o.t_start - ev.t_end, ev.t_start - o.t_end) <= CORROBORATE_GAP for o in self.seen)
+
     def _emit(self, t: float, kind: VerdictKind, sid: int, msg: str, contrib: list[tuple[int, Event]],
-              conf: float | None = None) -> Verdict | None:
-        """contrib: (event_idx, event) pairs behind the verdict; conf defaults to their minimum."""
+              conf: float | None = None, gated: bool = True) -> Verdict | None:
+        """contrib: (event_idx, event) pairs behind the verdict; conf defaults to their minimum.
+
+        A verdict resting on a weak event nobody corroborates yet is parked, not spoken (_release)."""
         if (kind, sid) in self._reported:
+            return None
+        if gated and not all(self._backed(kind, e) for _, e in contrib):
+            self.parked[(kind, sid)] = (kind, sid, msg, contrib, conf)
             return None
         conf = min(e.conf for _, e in contrib) if conf is None else conf
         ev = [Evidence(clip=e.clip, t_start=e.t_start, t_end=e.t_end, frame_t=e.frame_refs, event_idx=i)
@@ -83,8 +104,23 @@ class Aligner:
         self.verdicts.append(v)
         return v
 
+    def _release(self, t: float) -> list[Verdict]:
+        """Speak parked verdicts whose evidence is now corroborated; withdraw skips of steps that have since happened."""
+        out = []
+        for key, (kind, sid, msg, contrib, conf) in list(self.parked.items()):
+            if kind == VerdictKind.SKIPPED and sid in self.done:
+                del self.parked[key]
+            elif all(self._backed(kind, e) for _, e in contrib):
+                del self.parked[key]
+                out.append(self._emit(t, kind, sid, msg, contrib, conf, gated=False))
+        return [v for v in out if v]
+
     def feed(self, ev: Event) -> list[Verdict]:
         """Events get their index in feed order; Verdict evidence refers to it."""
+        self.seen.append(ev)
+        return self._feed(ev) + self._release(ev.t_end)
+
+    def _feed(self, ev: Event) -> list[Verdict]:
         cur = (self._n, ev)
         self._n += 1
         step, how = self._find(ev)
@@ -135,5 +171,5 @@ class Aligner:
         for s in self.steps:
             if s.id not in self.done and not s.optional:
                 out.append(self._emit(t_end, VerdictKind.SKIPPED, s.id,
-                    f"Step {s.id} ('{s.label}') was never done.", seen[-1:], conf))
+                    f"Step {s.id} ('{s.label}') was never done.", seen[-1:], conf, gated=False))
         return [v for v in out if v]

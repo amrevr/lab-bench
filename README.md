@@ -24,7 +24,7 @@ Not used on purpose: Muse Image.
 
 | Path | What |
 |---|---|
-| `backend/labbench/schema.py` | Event, Step, Protocol, Verdict (with evidence); flag/ask thresholds per kind (0.75 / 0.40; technique and wrong-item 0.85 / 0.50) |
+| `backend/labbench/schema.py` | Event, Step, Protocol, Verdict (with evidence); flag/ask thresholds per kind (0.75 / 0.40; technique and wrong-item 0.85 / 0.50); false-alarm control in `align.py`: `STRONG` 0.8 (an event at least this confident backs a verdict alone; weaker ones must be seen again, same action/object, in another chunk within `CORROBORATE_GAP` 1.0 s, same technique for a technique verdict, or the verdict is parked and dropped), `ORDER_GAP` 3.0 s, `SKIP_AFTER` 2 |
 | `backend/labbench/pipeline/` | `chunker`, `sam`, `vision`, `align`, `wonder` |
 | `backend/labbench/run.py`, `eval.py`, `answerkey.py` | run a clip; score verdicts against annotations; `--manifest` scores real keys per step and category |
 | `overlay/index.html` | coaching overlay (static page, reads a session JSON) |
