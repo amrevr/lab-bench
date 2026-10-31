@@ -41,7 +41,7 @@ class AlignerMatchingTests(unittest.TestCase):
 
     def test_events_within_one_chunk_are_not_ordered(self):
         place = dict(t_start=0, t_end=1, action="place", obj="tomato", target="plate", conf=0.9)
-        cut = lambda t: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", conf=0.9)
+        cut = lambda t: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique="slice", conf=0.9)
         self.assertEqual(_feed([place, cut(1)]), [])
         self.assertEqual(_feed([place, cut(10)]), [("wrong_order", 2)])
 
@@ -80,6 +80,66 @@ class FalseAlarmControlTests(unittest.TestCase):
         again = [ev(10.5, "sprinkle", "salt", "plate"), ev(20.5, "sprinkle", "pepper", "plate")]   # corroboration arrives later
         self.assertIn(("skipped_step", 2), _feed(ok + later + again))
         self.assertNotIn(("skipped_step", 2), _feed(ok + later + [ev(15, "place", "tomato", "plate", 0.9)] + again))
+
+
+class PrincipledAlignerTests(unittest.TestCase):
+    ev = staticmethod(lambda t, a, o, tg=None, c=0.9, tech=None, w=None: dict(
+        t_start=t, t_end=t + 1, action=a, obj=o, target=tg, technique=tech, conf=c, chunk=[t if w is None else w] * 2))
+
+    def run_al(self, steps, events):
+        from labbench.schema import Protocol
+        al = Aligner(Protocol(name="p", source_clip="c", steps=steps))
+        for e in events:
+            al.feed(Event(**e))
+        return al
+
+    def test_one_event_missing_the_target_or_technique_is_not_the_step(self):
+        e = self.ev
+        place = lambda t, w=None: e(t, "place", "tomato", None, w=w)
+        cut = e(20, "cut", "tomato", tech="slice")
+        self.assertEqual(_feed([place(0), cut]), [])                                  # a lone target-less place is not step 2
+        self.assertEqual(_feed([place(0), place(1.5), cut]), [("wrong_order", 2)])     # seen in a second window it is
+        self.assertEqual(_feed([e(0, "cut", "tomato"), e(10, "place", "tomato", "plate")]), [])   # lone technique-less cut is not step 1
+
+    def test_prerequisite_step_must_have_been_attempted(self):
+        steps = [Step(id=1, label="s1", action="cut", obj="tomato", technique="slice"),
+                 Step(id=2, label="s2", action="place", obj="tomato", target="plate", after=[1])]
+        e = self.ev
+        al = self.run_al(steps, [e(0, "place", "tomato", "plate"), e(10, "cut", "tomato", tech="slice")])
+        self.assertEqual(sorted(al.done), [1])
+        al = self.run_al(steps, [e(0, "cut", "tomato", tech="slice"), e(10, "place", "tomato", "plate")])
+        self.assertEqual(sorted(al.done), [1, 2])
+
+    def test_target_named_as_the_ingredient_is_not_a_wrong_item(self):
+        e = self.ev
+        for noun, act in (("tomato", "sprinkle"), ("plate", "sprinkle"), ("cutting board", "pour"), ("tomato", "season")):
+            self.assertEqual(_feed([e(0, "cut", "tomato", tech="slice"), e(10, act, noun, "plate", w=10), e(10.5, act, noun, "plate", w=10.5)]), [])
+        al = self.run_al(_protocol(), [e(0, "season", "tomato", None)])
+        self.assertEqual((al.seen[0].action, al.seen[0].obj, al.seen[0].target), ("sprinkle", "", "tomato"))
+
+    def test_unknown_noun_is_wrong_item_only_when_strong_and_repeated(self):
+        e = self.ev
+        cut = e(0, "cut", "tomato", tech="slice")
+        pap = lambda t, c=0.9: e(t, "sprinkle", "paprika", "plate", c=c, w=t)
+        self.assertEqual(_feed([cut, pap(10)]), [])
+        self.assertEqual(_feed([cut, pap(10, 0.7), pap(10.5, 0.7)]), [])
+        self.assertEqual(_feed([cut, pap(10), pap(10.5)]), [("wrong_item", 3)])
+
+    def test_unordered_peers_are_no_evidence_of_a_skip(self):
+        g = lambda i, o: Step(id=i, label=f"s{i}", action="sprinkle", obj=o, target="plate", group="g")
+        steps = [Step(id=1, label="s1", action="cut", obj="tomato", technique="slice"), g(2, "salt"), g(3, "pepper"), g(4, "cumin")]
+        e = self.ev
+        al = self.run_al(steps, [e(0, "cut", "tomato", tech="slice"), e(10, "sprinkle", "pepper", "plate"), e(20, "sprinkle", "cumin", "plate")])
+        self.assertEqual([v.kind for v in al.verdicts if v.mode != "ok"], [])
+
+    def test_ask_is_a_question_and_flag_a_statement(self):
+        e = self.ev
+        order = lambda c: self.run_al(_protocol(), [e(0, "place", "tomato", "plate", c=c, w=0), e(1.5, "place", "tomato", "plate", c=c, w=1.5),
+                                                    e(10, "cut", "tomato", tech="slice")]).verdicts
+        ask, flag = [v for v in order(0.6) if v.mode == "ask"], [v for v in order(0.9) if v.mode == "flag"]
+        self.assertTrue(ask and flag)
+        self.assertTrue(ask[0].message.startswith("Did you") and "?" in ask[0].message)
+        self.assertNotIn("?", flag[0].message)
 
 
 class PipelineTests(unittest.TestCase):
@@ -166,6 +226,22 @@ class PipelineTests(unittest.TestCase):
                                             "Technique": (1, 2), "Measurement": (1, 1)})
         self.assertEqual(r["false_alarms"], 2)               # step 99, and wrong_order on 121 (the key says Missing Step)
         self.assertEqual([x["hit"] for x in r["verdicts"]], [True, False, True, False])
+
+
+class KeyframesClipEndTests(unittest.TestCase):
+    def test_missing_last_frame_is_skipped(self):
+        import tempfile
+        from unittest import mock
+        from labbench.pipeline import chunker
+
+        def fake_run(cmd):   # ffmpeg writes nothing for a seek past the end
+            if float(cmd[cmd.index("-ss") + 1]) < 10.0:
+                pathlib.Path(cmd[-1]).write_bytes(b"x")
+
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(chunker, "_run", fake_run):
+            kf = chunker.keyframes(pathlib.Path("c.mp4"), 9.0, 10.5, pathlib.Path(d))   # short final window
+            self.assertTrue(all(p.exists() for _, p in kf))
+        self.assertEqual([round(t, 2) for t, _ in kf], [9.19, 9.56, 9.94])
 
 
 if __name__ == "__main__":
