@@ -60,7 +60,7 @@ class FalseAlarmControlTests(unittest.TestCase):
     weak_cut = dict(t_start=0, t_end=1, action="cut", obj="tomato", technique="slice", conf=0.9, chunk=[0, 3])
 
     def test_weak_lone_event_is_not_spoken_but_corroborated_one_is(self):
-        place = lambda t, w: dict(t_start=t, t_end=t + 1, action="place", obj="tomato", target="plate", conf=0.6, chunk=[w, w + 3])
+        place = lambda t, w: dict(t_start=t, t_end=t + 1, action="place", obj="tomato", target="plate", conf=0.55, chunk=[w, w + 3])
         cut = dict(t_start=10, t_end=11, action="cut", obj="tomato", technique="slice", conf=0.9, chunk=[10, 13])
         self.assertEqual(_feed([place(0, 0), cut]), [])                                   # one 0.6 window: parked, then dropped
         self.assertEqual(_feed([place(0, 0), cut, place(11.5, 11.5)]), [])                # too far from the first: still lone
@@ -68,13 +68,13 @@ class FalseAlarmControlTests(unittest.TestCase):
         self.assertEqual(_feed([place(0, 0), cut, place(1.5, 1.5)]), [("wrong_order", 2)])    # corroborated later: spoken then
 
     def test_weak_technique_needs_the_same_technique_again(self):
-        cut = lambda t, w, tech: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech, conf=0.6, chunk=[w, w + 3])
+        cut = lambda t, w, tech: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech, conf=0.55, chunk=[w, w + 3])
         strong = {**self.weak_cut, "t_start": 0, "t_end": 1}
         self.assertEqual(_feed([strong, cut(5, 5, "tear"), cut(6.5, 6.5, "slice")]), [])
         self.assertEqual(_feed([strong, cut(5, 5, "tear"), cut(5.5, 5.5, "tear")]), [("wrong_technique", 1)])
 
     def test_parked_skip_is_withdrawn_when_the_step_happens(self):
-        ev = lambda t, a, o, tg=None, c=0.6: dict(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=c, chunk=[t, t + 3])
+        ev = lambda t, a, o, tg=None, c=0.55: dict(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=c, chunk=[t, t + 3])
         ok = [ev(0, "cut", "tomato", c=0.9)]
         later = [ev(10, "sprinkle", "salt", "plate"), ev(20, "sprinkle", "pepper", "plate")]    # weak: step 2 looks skipped, parked
         again = [ev(10.5, "sprinkle", "salt", "plate"), ev(20.5, "sprinkle", "pepper", "plate")]   # corroboration arrives later
@@ -122,7 +122,7 @@ class PrincipledAlignerTests(unittest.TestCase):
         cut = e(0, "cut", "tomato", tech="slice")
         pap = lambda t, c=0.9: e(t, "sprinkle", "paprika", "plate", c=c, w=t)
         self.assertEqual(_feed([cut, pap(10)]), [])
-        self.assertEqual(_feed([cut, pap(10, 0.7), pap(10.5, 0.7)]), [])
+        self.assertEqual(_feed([cut, pap(10, 0.55), pap(10.5, 0.55)]), [])
         self.assertEqual(_feed([cut, pap(10), pap(10.5)]), [("wrong_item", 3)])
 
     def test_unordered_peers_are_no_evidence_of_a_skip(self):

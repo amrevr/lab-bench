@@ -10,7 +10,7 @@ from ..schema import THRESHOLDS, Event, Evidence, Protocol, Step, Verdict, Verdi
 
 SYNONYMS = {"tray": "plate", "platter": "plate", "dish": "plate"}   # a cutting board is not a serving plate
 ORDER_GAP = 3.0    # s (one chunk): events closer than this in time are not ordered, window timing is that coarse
-STRONG = 0.8       # an event this confident backs a verdict alone; weaker ones need a second window (false asks maxed at 0.72)
+STRONG = 0.6       # an event this confident backs a verdict alone; weaker ones need a second window. 0.6 on all 17 recipe-12 clips (Glimmer): same catches and false alarms as 0.8, warnings up to 5 min earlier; 0.5 adds a false alarm
 MIN_CONF = 0.5     # events below this confidence are ignored for ordering/attempts
 ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be corroborated
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
