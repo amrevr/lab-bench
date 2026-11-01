@@ -44,8 +44,11 @@ def parse_events(text: str, t0: float = 0.0, t1: float = 1e9) -> list[Event]:
     m = re.search(r"\[.*\]", text, re.S)
     if not m:
         raise ValueError("no JSON array in reply")
+    arr, end = json.JSONDecoder().raw_decode(m.group(0))
+    if m.group(0)[end:].strip(" \n\t]"):     # only stray closing brackets may follow ("[]]"); more JSON is a bad reply
+        raise ValueError("extra data after the JSON array")
     out = []
-    for raw in json.loads(m.group(0)):
+    for raw in arr:
         ev = Event.model_validate(raw)
         ev.obj = ev.obj.lower().replace("_", " ")       # the aligner compares names exactly
         ev.target = ev.target.lower().replace("_", " ") if ev.target else None
