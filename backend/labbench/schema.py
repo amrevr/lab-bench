@@ -43,6 +43,8 @@ class Step(BaseModel):
     qty: Optional[str] = None        # "1/2 in", "1/4 tsp"; not visible to the pipeline, shown only
     source_frames: list[float] = []  # expert-clip timestamps (s)
     action: str
+    aliases: list[str] = []          # other verbs a viewer may use for this action (fill: pour, add)
+    seen_as: list[dict] = []         # other ways it looks on camera: {action, target} (microwave: place -> microwave)
     obj: str
     target: Optional[str] = None
     technique: Optional[str] = None

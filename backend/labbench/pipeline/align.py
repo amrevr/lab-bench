@@ -63,6 +63,10 @@ class Aligner:
         self.ingredients = {(s.action, _norm(s.obj)) for s in self.steps}
         self.pos = {s.id: i for i, s in enumerate(protocol.steps)}   # step ids need not be sorted
         self.partial = protocol.partial_order
+        self.contents: dict[str, set[str]] = {}    # container -> what steps put into it (a step "on" a container
+        for st in self.steps:                       # covers its contents)
+            if st.target:
+                self.contents.setdefault(_norm(st.target), set()).add(st.obj)
         self.anc: dict[int, set[int]] = {}         # step -> every step that must come before it (transitive `after`)
         for st in self.steps:
             todo, seen = list(st.after), set()
@@ -107,7 +111,7 @@ class Aligner:
         if not ev.obj:
             return None, "none"
         cands = [s for s in self.steps if (ev.target is None or s.target is None or self._known(ev.target))
-                 and s.action == ev.action and _same(s.obj, ev.obj) and s.id not in self.done]
+                 and self._is(s, ev) and s.id not in self.done]
         if cands:
             s = next((c for c in cands if _same(c.target, ev.target)), cands[0])
             if s.technique and ev.technique and not _same(s.technique, ev.technique):
@@ -115,16 +119,32 @@ class Aligner:
             return s, "exact"
         # An attempted step is judged again for technique: the first event is often the setup, the method shows later.
         for s in self.steps:
-            if s.id in self.done and s.technique and ev.technique and s.action == ev.action and _same(s.obj, ev.obj) \
+            if s.id in self.done and s.technique and ev.technique and self._is(s, ev) \
                     and not _same(s.technique, ev.technique):
                 return s, "technique"
         # Same action, same destination, different object -> wrong item for the next such step.
         for s in self.steps:
-            if s.action == ev.action and not _same(s.obj, ev.obj) and s.id not in self.done and (
+            if self._act(s, ev.action) and not self._obj(s, ev) and s.id not in self.done and (
                 s.target is None or _same(s.target, ev.target)
             ) and not self._known(ev.obj):     # a protocol object in another role is not a wrong item
                 return s, "item"
         return None, "none"
+
+    def _act(self, s: Step, action: str) -> bool:
+        return action == s.action or action in s.aliases
+
+    def _obj(self, s: Step, ev: Event) -> bool:
+        """The event's object is the step's, or the step acts on a container (mix the mug) and the event names the
+        container as target or anything the recipe puts into it (mix the milk)."""
+        if _same(s.obj, ev.obj):
+            return True
+        inside = self.contents.get(_norm(s.obj))
+        return bool(inside) and (_same(ev.target, s.obj) or any(_same(ev.obj, i) for i in inside))
+
+    def _is(self, s: Step, ev: Event) -> bool:
+        looks = self._act(s, ev.action) or any(
+            v.get("action") == ev.action and (not v.get("target") or _same(ev.target, v["target"])) for v in s.seen_as)
+        return looks and self._obj(s, ev)
 
     def _known(self, x: str) -> bool:
         """A name the recipe itself uses (as any step's object or target), matched leniently like _same."""
@@ -186,7 +206,7 @@ class Aligner:
         """A visible mishap (spill, pile-up, ...) is a technique error on the step being done, even one already done."""
         if not ev.issue or ev.issue.strip().lower() in ("", "none", "null", "no") or ev.conf < MIN_CONF:
             return []
-        cands = [s for s in self.steps if s.action == ev.action and _same(s.obj, ev.obj)]
+        cands = [s for s in self.steps if self._is(s, ev)]
         s = next((c for c in cands if c.id not in self.done), cands[0] if cands else None)
         if s is None:
             return []

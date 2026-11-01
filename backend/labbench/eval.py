@@ -231,7 +231,8 @@ def summarize_timed(results: list[dict]) -> dict:
     tp_rec = sum(x["tp"] > 0 for x in err)
     fp_rec = sum(x["mid_clip_nonok"] > 0 for x in norm)
     # TI-PREGO balanced precision: false positives weighted by positives/negatives, since most clips are normal
-    pb = tp_rec / (tp_rec + len(err) / max(1, len(norm)) * fp_rec) if tp_rec or fp_rec else 0.0
+    denom = tp_rec + len(err) / max(1, len(norm)) * fp_rec
+    pb = tp_rec / denom if denom else 0.0      # no error clips and only false alarms: precision 0
     rc = tp_rec / max(1, len(err))
     om = [x["omission"] for x in results]
     return {"steps_strict": (sum(r["strict"] for r in rows), len(rows)),

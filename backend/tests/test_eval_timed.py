@@ -48,5 +48,10 @@ class TimedScoringTests(unittest.TestCase):
         self.assertEqual((s["rec_tpr"], s["rec_fpr"], s["fa_end"]), ((1, 1), (0, 1), 1))
 
 
+    def test_only_normal_clips_with_alarms_does_not_divide_by_zero(self):
+        normal = score_timed(sess([{"step_id": 4, "kind": "skipped_step", "t": 50}]), rec("n", [step(4, 1, 2)]))
+        self.assertEqual(summarize_timed([normal])["rec_f1_balanced"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

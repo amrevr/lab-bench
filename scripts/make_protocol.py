@@ -18,12 +18,14 @@ import urllib.request
 
 PROMPT = (
     "Each line is one step of a cooking recipe, as 'id: description'. For every step return a JSON object "
-    "{id, label, action, obj, target, technique}: action is one short lowercase verb a camera could see (add, pour, cut, "
+    "{id, label, action, aliases, seen_as, obj, target, technique}: action is one short lowercase verb a camera could see (add, pour, cut, "
     "mix, microwave, heat, spread, place, wash, ...); obj is what is moved or worked on, as a short lowercase noun "
     "(milk in 'fill a mug with milk'; for a step on everything in a container, such as mix, heat or microwave, the "
     "container itself, e.g. 'mug'); target is the container or surface it goes into or onto (or null); technique is the "
     "method only when the step names one that a camera could check (slice, dice, chop, ...), else null; label is the "
-    "step in 3-6 plain words. Use the same noun for the same thing in every step. Reply with ONLY a JSON array.")
+    "step in 3-6 plain words; aliases lists up to 3 other verbs a viewer might use for "
+    "the same visible action (fill: pour, add; microwave: heat, warm); seen_as lists up to 2 other ways the step "
+    "looks on camera as {action, target} with everyday verbs (microwave the mug: {\"action\": \"place\", \"target\": \"microwave\"}), or []. Use the same noun for the same thing in every step. Reply with ONLY a JSON array.")
 
 
 def ask_glimmer(lines: list[str]) -> list[dict]:
@@ -52,7 +54,13 @@ def build(graph: dict, desc: dict, annotations: dict, recipe: int) -> dict:
     for g in order:
         n = named[g]
         steps.append({"id": g, "label": n.get("label") or desc[str(g)], "recipe_text": desc[str(g)],
-                      "action": n["action"].lower().strip(), "obj": n["obj"].lower().strip(),
+                      "action": n["action"].lower().strip(),
+                      **({"aliases": sorted({a.lower().strip() for a in n["aliases"]} - {n["action"].lower().strip()})}
+                         if n.get("aliases") else {}),
+                      **({"seen_as": [{"action": v["action"].lower().strip(),
+                                       **({"target": v["target"].lower().strip()} if v.get("target") else {})}
+                                      for v in n["seen_as"] if v.get("action")]} if n.get("seen_as") else {}),
+                      "obj": n["obj"].lower().strip(),
                       **({"target": n["target"].lower().strip()} if n.get("target") else {}),
                       **({"technique": n["technique"].lower().strip()} if n.get("technique") else {}),
                       **({"after": after[g]} if after.get(g) else {})})
