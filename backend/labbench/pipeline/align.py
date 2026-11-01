@@ -49,6 +49,16 @@ class Aligner:
         self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n}
         self.ingredients = {(s.action, _norm(s.obj)) for s in self.steps}
         self.pos = {s.id: i for i, s in enumerate(protocol.steps)}   # step ids need not be sorted
+        self.partial = protocol.partial_order
+        self.anc: dict[int, set[int]] = {}         # step -> every step that must come before it (transitive `after`)
+        for st in self.steps:
+            todo, seen = list(st.after), set()
+            while todo:
+                a = todo.pop()
+                if a not in seen and a in self.pos:
+                    seen.add(a)
+                    todo += self.steps[self.pos[a]].after
+            self.anc[st.id] = seen
         self.done: dict[int, tuple[int, Event]] = {}   # step id -> (event idx, event) that attempted it
         self.verdicts: list[Verdict] = []
         self._reported: set[tuple[VerdictKind, int]] = set()
@@ -102,6 +112,14 @@ class Aligner:
             ) and _norm(ev.obj) not in self.names:     # a protocol object in another role is not a wrong item
                 return s, "item"
         return None, "none"
+
+    def _follows(self, d: int, s: int) -> bool:
+        """Must step d come after step s? A partial-order protocol answers from its prerequisite graph; a hand-written
+        list answers by position, except within a group (steps that may be done in any order)."""
+        if self.partial:
+            return s in self.anc[d]
+        sd, ss = self.steps[self.pos[d]], self.steps[self.pos[s]]
+        return self.pos[d] > self.pos[s] and not (ss.group and ss.group == sd.group)
 
     def _backed(self, kind: VerdictKind, ev: Event) -> bool:
         """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict) in another window."""
@@ -174,8 +192,7 @@ class Aligner:
             if step.id not in self.done:   # a step done before its prerequisite was only an earlier, different action: not this step
                 for d in [d for d in self.done if step.id in self.steps[self.pos[d]].after]:
                     del self.done[d]
-            later = sorted((d for d in self.done if self.pos[d] > self.pos[step.id]
-                            and not (step.group and step.group == self.steps[self.pos[d]].group)
+            later = sorted((d for d in self.done if self._follows(d, step.id)
                             and ev.t_start - self.done[d][1].t_end >= ORDER_GAP), key=self.pos.get)
             if later:
                 first = next(s for s in self.steps if s.id == later[0])
@@ -187,9 +204,8 @@ class Aligner:
             fresh = step.id not in self.done
             self.done.setdefault(step.id, cur)
             for m in self.steps:
-                if self.pos[m.id] < self.pos[step.id] and m.id not in self.done and not m.optional:
-                    after = [c for d, c in self.done.items() if self.pos[d] > self.pos[m.id]
-                             and not (m.group and m.group == self.steps[self.pos[d]].group)]   # an unordered peer is no evidence
+                if self._follows(step.id, m.id) and m.id not in self.done and not m.optional:
+                    after = [c for d, c in self.done.items() if self._follows(d, m.id)]   # an unordered peer is no evidence
                     if len(after) >= self.SKIP_AFTER:
                         out.append(self._emit(t, VerdictKind.SKIPPED, m.id,
                             (f"Step {m.id} ('{m.label}') looks skipped.", f"Did you do '{m.label}' (step {m.id})?"), after))

@@ -1,0 +1,9 @@
+{ "name": "Spiced Hot Chocolate (CaptainCook4D recipe 8, generated)", "source_clip": "8_15", "partial_order": true, "steps": [
+  { "id": 88, "label": "Fill mug with milk", "recipe_text": "Fill-Fill a microwave-safe mug with skimmed milk", "action": "fill", "obj": "milk", "target": "mug" },
+  { "id": 89, "label": "Microwave mug contents", "recipe_text": "Microwave-Microwave the contents of the mug for 1 minute", "action": "microwave", "obj": "mug", "after": [ 88 ] },
+  { "id": 87, "label": "Add sugar to mug", "recipe_text": "Add-Add 1 teaspoon of white sugar to the mug", "action": "add", "obj": "sugar", "target": "mug", "after": [ 89 ] },
+  { "id": 90, "label": "Add chocolate to mug", "recipe_text": "Add-Add 2 pieces of chocolate to the mug", "action": "add", "obj": "chocolate", "target": "mug", "after": [ 89 ] },
+  { "id": 84, "label": "Add cinnamon to mug", "recipe_text": "Add-Add 1/5 teaspoon cinnamon to the mug", "action": "add", "obj": "cinnamon", "target": "mug", "after": [ 89 ] },
+  { "id": 85, "label": "Mix mug contents", "recipe_text": "Mix-Mix the contents of the mug", "action": "mix", "obj": "mug", "after": [ 84, 87, 90 ] },
+  { "id": 83, "label": "Heat mug and serve", "recipe_text": "Heat-Heat the contents of the mug for 1 minute and serve", "action": "heat", "obj": "mug", "after": [ 85 ] } ]
+}

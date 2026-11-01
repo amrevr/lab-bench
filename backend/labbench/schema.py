@@ -61,6 +61,7 @@ class Protocol(BaseModel):
     name: str
     source_clip: str
     steps: list[Step]
+    partial_order: bool = False      # True: `after` is the full prerequisite graph (generated protocols); order = reachability
 
 
 class VerdictKind(str, Enum):

@@ -27,10 +27,12 @@ BACKENDS = {
 }
 BACKOFF = 1.5     # seconds before the retry of a failed request
 
+DEFAULT_ACTIONS = ("wash", "dry", "cut", "place", "pour", "sprinkle", "mix", "pick")
+GENERIC_ACTIONS = ("pick", "place", "mix")      # always allowed: handling that is not itself a protocol step
 SYSTEM = (
     "You watch short cooking-bench clips as keyframes plus object-track summaries. Reply with ONLY a "
     "JSON array of events: {t_start,t_end,action,obj,target,technique,conf}. action is one of "
-    "wash,dry,cut,place,pour,sprinkle,mix,pick. Use lowercase nouns. obj is the food being handled (tomato, "
+    "{actions}. Use lowercase nouns. obj is the food being handled (tomato, "
     "not the paper towel or the hands); technique is the method (slice, dice, tear), never the tool. conf in 0..1; lower it when unsure. "
     "Return [] if nothing is happening."
 )
@@ -103,7 +105,9 @@ class Vision:
         self.backend = backend
         self.base_url = (base_url or url).rstrip("/")
         self.model = model or name
-        self.system = SYSTEM + (f" Use these names where they fit: {', '.join(names)}." if names else "")
+        acts = list(dict.fromkeys([st.action for st in steps] + list(GENERIC_ACTIONS))) if steps else DEFAULT_ACTIONS
+        self.system = SYSTEM.replace("{actions}", ",".join(acts)) + (
+            f" Use these names where they fit: {', '.join(names)}." if names else "")
         self.system += prompt_extra(style, steps)
         self.api_key = api_key or os.environ.get(key_env, "")
 
