@@ -29,7 +29,7 @@ os.environ.setdefault("FFMPEG", imageio_ffmpeg.get_ffmpeg_exe())   # static buil
 
 from .pipeline import chunker  # noqa: E402
 from .pipeline.align import Aligner  # noqa: E402
-from .pipeline.sam import CONCEPTS, MetaSam, link_tracks  # noqa: E402
+from .pipeline.sam import CONCEPTS, MetaSam, NullSam, link_tracks  # noqa: E402
 from .pipeline.vision import Vision, VisionError, attach_tracks  # noqa: E402
 from .pipeline.wonder import coach_text  # noqa: E402
 from .schema import Protocol  # noqa: E402
@@ -66,6 +66,7 @@ def main() -> None:
     ap.add_argument("--max-spend", type=float, required=True, help="USD of SAM frames before aborting")
     ap.add_argument("--fps", type=int, default=10)
     ap.add_argument("--height", type=int, default=480)
+    ap.add_argument("--no-sam", action="store_true", help="skip SAM (no tracks, no cost): verdicts do not use tracks")
     ap.add_argument("--finish", action="store_true", help="at --end, call every step still undone skipped")
     ap.add_argument("--workdir", type=pathlib.Path, help="chunks and keyframes (default: a temp dir)")
     ap.add_argument("--out", type=pathlib.Path, required=True)
@@ -74,9 +75,9 @@ def main() -> None:
     clip, protocol = a.clip.stem, Protocol.model_validate_json(a.protocol.read_text())
     work = a.workdir or pathlib.Path(tempfile.mkdtemp(prefix="replay-"))
     names = sorted({n for st in protocol.steps for n in (st.obj, st.target) if n})   # the recipe's own nouns
-    sam, vision, al = MetaSam(fps=a.fps), Vision(a.backend, names=names), Aligner(protocol)
+    sam, vision, al = (NullSam() if a.no_sam else MetaSam(fps=a.fps)), Vision(a.backend, names=names), Aligner(protocol)
     wins = [(a.start + s, a.start + e) for s, e in chunker.windows(a.end - a.start)]
-    est = len(CONCEPTS) * max(50, round(3.0 * a.fps))            # billed frames per window (50 min per request)
+    est = 0 if a.no_sam else len(CONCEPTS) * max(50, round(3.0 * a.fps))   # billed frames per window (50 min per request)
     print(f"{len(wins)} windows, estimated SAM cost ${len(wins) * est * FRAME_COST:.2f} (cap ${a.max_spend:.2f})")
     if len(wins) * est * FRAME_COST > a.max_spend:
         sys.exit("estimate is over --max-spend; shorten the range or lower --fps/--height")
@@ -89,15 +90,28 @@ def main() -> None:
             return [], str(x)
 
     def work_on(i: int, s: float, e: float):
-        """-> (tracks, events, health); health = {"vision": error or None, "sam": [failed concepts]}."""
-        h = {"vision": None, "sam": []}
+        """-> (tracks, events, health); health = {"vision": error or None, "sam": [failed concepts], "t": stage seconds}."""
+        h = {"vision": None, "sam": [], "t": {}}
+        t = time.time
         try:
-            chunk = chunker.cut_chunk(a.clip, s, e, work / clip / f"chunk{i:04d}.mp4", a.height, a.fps)
+            t0 = t()
             kf = chunker.keyframes(a.clip, s, e, work / "frames" / clip)
+            h["t"]["keyframes"] = round(t() - t0, 2)
             with ThreadPoolExecutor(2) as ex:                     # SAM and the vision call overlap (#10)
-                ev = ex.submit(see, kf, s, e)
-                tracks = sam.track(chunk, list(CONCEPTS), s, h["sam"])
+                def timed_see():
+                    t1 = t()
+                    r = see(kf, s, e)
+                    h["t"]["vision"] = round(t() - t1, 2)
+                    return r
+                ev = ex.submit(timed_see)
+                tracks = []
+                if not a.no_sam:                                  # only SAM needs the cut chunk
+                    t1 = t()
+                    chunk = chunker.cut_chunk(a.clip, s, e, work / clip / f"chunk{i:04d}.mp4", a.height, a.fps)
+                    tracks = sam.track(chunk, list(CONCEPTS), s, h["sam"])
+                    h["t"]["cut+sam"] = round(t() - t1, 2)
                 evs, h["vision"] = ev.result()
+                h["t"]["window"] = round(t() - t0, 2)
                 return tracks, evs, h
         except Exception as x:   # one bad window must not end the replay
             h["vision"] = f"{type(x).__name__}: {x}"
@@ -105,7 +119,7 @@ def main() -> None:
         finally:
             done[0] += 1
 
-    done, events, prev, errors, aborted = [0], [], [], [], False
+    done, events, prev, errors, aborted, timings = [0], [], [], [], False, []
     counts: dict[str, int] = {}
     stats = {"windows": 0, "vision_failed": 0, "vision_idle": 0, "sam_failed": 0}
     session = {"clip": clip, "protocol": protocol.model_dump(), "events": events, "verdicts": al.verdicts}
@@ -145,6 +159,7 @@ def main() -> None:
             s, e, fed_at, f = item
             tracks, evs, h = f.result()
             stats["windows"] += 1
+            timings.append({"s": s, "queued": round(time.time() - fed_at, 2), **h.get("t", {})})
             stats["vision_idle"] += not evs and not h["vision"]
             stats["vision_failed"] += bool(h["vision"])
             stats["sam_failed"] += len(h["sam"])
@@ -168,7 +183,7 @@ def main() -> None:
     session["verdicts"] = [v.model_dump(mode="json") for v in al.verdicts]
     session["run"] = {"backend": a.backend, "pace": a.pace, "start": a.start, "end": a.end, "fps": a.fps,
                       "height": a.height, "billed_frames": sam.frames, "cost_usd": round(sam.frames * FRAME_COST, 3),
-                      "errors": errors, "aborted": aborted, **stats}
+                      "errors": errors, "aborted": aborted, "no_sam": a.no_sam, "timings": timings, **stats}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(session, indent=1))
     print(f"windows {stats['windows']}: vision failed {stats['vision_failed']}, idle {stats['vision_idle']}, "

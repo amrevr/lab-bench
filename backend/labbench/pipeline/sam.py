@@ -36,6 +36,8 @@ class Sam(Protocol):
 
 
 class NullSam:
+    frames = 0                   # nothing billed
+
     def track(self, chunk, prompts, t0):
         return []
 
