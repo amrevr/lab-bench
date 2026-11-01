@@ -62,14 +62,14 @@ python3 -m http.server 8765
 ## Glimmer on the cluster (2x H100, shared)
 
 What was done (issue #14): Muse Glimmer 30B, FP8-block, tensor parallel 2, vLLM 0.32, conda env under
-`/data/vermar/` (no docker, no sudo), 16384 context, about 24 GB per GPU; startup takes about 2.5 min (58 s of it
+`/data/vermar/` (no docker, no sudo), 16384 context, about 26 GB per GPU (32 GB with the drafter); startup takes about 2.5 min (58 s of it
 torch.compile; CUDA graphs are on). The command that ran is `cluster/40_serve_glimmer_h100.sh` (run it on dsp);
 `DFLASH=1` adds Meta's DFlash drafter (`meta-models/Muse-Glimmer-30B-assistant`, 4 draft tokens; `NSPEC` overrides)
 and `--async-scheduling`: p50 1.8 s instead of 3.6 s per call at real-time pace, for about 6 GB more per GPU
 (docs/measurements.md). Stop it by PID: `ps -u vermar -o pid,cmd | grep "[b]in/vllm serve"`.
 
 The cluster has no `nvcc`, so the FlashInfer/DeepGEMM JIT paths crash; the switches in the script avoid them (the
-sampler one was the TP=2 crash; the other two are precautions). Requests must pass
+sampler one was the TP=2 crash, `VLLM_USE_DEEP_GEMM=0` stops the FP8 crash; keep all of them). Requests must pass
 `chat_template_kwargs: {"reasoning_strength": "low"}` (the client does this for `glimmer`); vLLM ignores
 `reasoning_effort`, and default reasoning takes about 18 s and is often cut off.
 

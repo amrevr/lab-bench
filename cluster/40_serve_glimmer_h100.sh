@@ -7,6 +7,9 @@ export HF_HOME=/data/vermar/lab-bench-glimmer/hf
 # no nvcc on dsp: keep FlashInfer/DeepGEMM JIT paths off
 export VLLM_USE_DEEP_GEMM=0 VLLM_MOE_USE_DEEP_GEMM=0 VLLM_ALLREDUCE_USE_FLASHINFER=0 VLLM_USE_FLASHINFER_SAMPLER=0 \
        VLLM_BLOCKSCALE_FP8_GEMM_FLASHINFER=0
+if ps -u vermar -o cmd | grep -q "[b]in/vllm serve"; then
+  echo "a vermar vllm server is already running; stop it first" >&2; exit 1
+fi
 SPEC=() LOG=serve.log MEM=0.30
 if [ "${DFLASH:-0}" = 1 ]; then
   SPEC=(--speculative-config '{"method":"dflash","model":"meta-models/Muse-Glimmer-30B-assistant","num_speculative_tokens":'"${NSPEC:-4}"'}'
