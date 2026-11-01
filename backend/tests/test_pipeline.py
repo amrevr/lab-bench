@@ -246,3 +246,16 @@ class KeyframesClipEndTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IssueTests(unittest.TestCase):
+    def test_visible_mishap_is_a_technique_flag_on_that_step_even_when_already_done(self):
+        from labbench.pipeline.align import Aligner
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        mk = lambda t, issue=None, c=0.9: Event(t_start=t, t_end=t + 1, action="fill", obj="milk", target="mug",
+                                                 issue=issue, conf=c, chunk=[t, t + 3])
+        self.assertEqual([v.kind.value for v in al.feed(mk(0))], ["on_track"])
+        self.assertEqual([(v.kind.value, v.step_id) for v in al.feed(mk(5, "spill"))], [("wrong_technique", 1)])
+        self.assertEqual(Aligner(p).feed(mk(0, "none")), Aligner(p).feed(mk(0)))      # "none" is no issue

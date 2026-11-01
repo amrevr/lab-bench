@@ -26,6 +26,7 @@ class Event(BaseModel):
     obj: str                         # ingredient or tool acted on
     target: Optional[str] = None     # destination (plate, bowl, ...)
     technique: Optional[str] = None  # slice, tear, saw, ...
+    issue: Optional[str] = None      # a visible mishap in how it was done: spill, drop, overflow, pile-up
     conf: float = Field(ge=0, le=1, default=0.8)       # the vision model's confidence
     sam_conf: Optional[float] = None                   # SAM detection confidence, kept separate
     track_ids: list[str] = []        # cross-chunk track ids (see sam.link_tracks)

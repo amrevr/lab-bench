@@ -38,6 +38,8 @@ SYSTEM = (
 )
 
 
+ISSUES = (" Also give each event an issue field: a visible mishap in how the action was done (spill, drop, overflow,"
+          " pile-up, mess, too much), or null when it was done cleanly. Report only what the keyframes show.")
 TECH_DEFS = (" Technique, by what the pieces look like: slice = flat rounds of even thickness; dice = small cubes;"
              " chop = rough irregular pieces; wedge = wedges cut through the core; tear = torn by hand.")
 HONEST = " The person may skip, repeat or reorder steps: report only what the keyframes show."
@@ -99,14 +101,14 @@ def summarize(tracks: list[Track]) -> str:
 
 class Vision:
     def __init__(self, backend: str | None = None, base_url: str | None = None, api_key: str | None = None,
-                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = ""):
+                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = "", issues: bool = False):
         backend = backend or os.environ.get("VISION_BACKEND", "glimmer")
         url, name, key_env = BACKENDS[backend]
         self.backend = backend
         self.base_url = (base_url or url).rstrip("/")
         self.model = model or name
         acts = list(dict.fromkeys([st.action for st in steps] + list(GENERIC_ACTIONS))) if steps else DEFAULT_ACTIONS
-        self.system = SYSTEM.replace("{actions}", ",".join(acts)) + (
+        self.system = SYSTEM.replace("{actions}", ",".join(acts)) + (ISSUES if issues else "") + (
             f" Use these names where they fit: {', '.join(names)}." if names else "")
         self.system += prompt_extra(style, steps)
         self.api_key = api_key or os.environ.get(key_env, "")

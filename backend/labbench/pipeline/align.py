@@ -165,9 +165,25 @@ class Aligner:
         self.seen.append(ev)
         return self._feed(ev) + self._release(ev.t_end)
 
+    def _issue(self, ev: Event, cur) -> list[Verdict]:
+        """A visible mishap (spill, pile-up, ...) is a technique error on the step being done, even one already done."""
+        if not ev.issue or ev.issue.strip().lower() in ("", "none", "null", "no") or ev.conf < MIN_CONF:
+            return []
+        cands = [s for s in self.steps if s.action == ev.action and _same(s.obj, ev.obj)]
+        s = next((c for c in cands if c.id not in self.done), cands[0] if cands else None)
+        if s is None:
+            return []
+        v = self._emit(ev.t_end, VerdictKind.WRONG_TECHNIQUE, s.id,
+                       (f"Step {s.id} ('{s.label}'): that looked like a {ev.issue}.",
+                        f"Step {s.id} ('{s.label}'): was there a {ev.issue}?"), [cur])
+        return [v] if v else []
+
     def _feed(self, ev: Event) -> list[Verdict]:
         cur = (self._n, ev)
         self._n += 1
+        return self._issue(ev, cur) + self._feed_step(ev, cur)
+
+    def _feed_step(self, ev: Event, cur) -> list[Verdict]:
         step, how = self._find(ev)
         if step is None or not self._consistent(step, ev):
             return []

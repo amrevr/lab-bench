@@ -69,6 +69,7 @@ def main() -> None:
     ap.add_argument("--height", type=int, default=480)
     ap.add_argument("--protocol-prompt", default="", choices=["", "full", "steps", "vocab", "techdefs", "steps+techdefs"],
                     help="experimental prompt variant (see vision.prompt_extra)")
+    ap.add_argument("--issues", action="store_true", help="ask the vision model for visible mishaps (spills, ...)")
     ap.add_argument("--sam-url", help="self-hosted SAM service (e.g. http://localhost:8001) instead of the hosted API")
     ap.add_argument("--no-sam", action="store_true", help="skip SAM (no tracks, no cost): verdicts do not use tracks")
     ap.add_argument("--finish", action="store_true", help="at --end, call every step still undone skipped")
@@ -79,7 +80,7 @@ def main() -> None:
     clip, protocol = a.clip.stem, Protocol.model_validate_json(a.protocol.read_text())
     work = a.workdir or pathlib.Path(tempfile.mkdtemp(prefix="replay-"))
     names = sorted({n for st in protocol.steps for n in (st.obj, st.target) if n})   # the recipe's own nouns
-    sam, vision, al = (NullSam() if a.no_sam else LocalSam(a.sam_url, fps=a.fps) if a.sam_url else MetaSam(fps=a.fps)), Vision(a.backend, names=names, steps=protocol.steps, style=a.protocol_prompt), Aligner(protocol)
+    sam, vision, al = (NullSam() if a.no_sam else LocalSam(a.sam_url, fps=a.fps) if a.sam_url else MetaSam(fps=a.fps)), Vision(a.backend, names=names, steps=protocol.steps, style=a.protocol_prompt, issues=a.issues), Aligner(protocol)
     wins = [(a.start + s, a.start + e) for s, e in chunker.windows(a.end - a.start)]
     est = 0 if a.no_sam or a.sam_url else len(CONCEPTS) * max(50, round(3.0 * a.fps))   # billed frames per window (50 min per request)
     print(f"{len(wins)} windows, estimated SAM cost ${len(wins) * est * FRAME_COST:.2f} (cap ${a.max_spend:.2f})")
@@ -207,7 +208,7 @@ def main() -> None:
     session["verdicts"] = [v.model_dump(mode="json") for v in al.verdicts]
     session["run"] = {"backend": a.backend, "pace": a.pace, "start": a.start, "end": a.end, "fps": a.fps,
                       "height": a.height, "billed_frames": sam.frames, "cost_usd": round(sam.frames * FRAME_COST, 3),
-                      "errors": errors, "aborted": aborted, "no_sam": a.no_sam, "protocol_prompt": a.protocol_prompt, "timings": timings,
+                      "errors": errors, "aborted": aborted, "no_sam": a.no_sam, "protocol_prompt": a.protocol_prompt, "issues": a.issues, "timings": timings,
                       "sam_s": {"p50": pct(sam_s, .5), "p90": pct(sam_s, .9)} if sam_s else None, **stats}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(session, indent=1))
