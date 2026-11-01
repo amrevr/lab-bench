@@ -134,11 +134,12 @@ class LocalSam:
     """Self-hosted SAM 3.1 (cluster/serve_sam.py on dsp, forwarded here): one request per chunk, all prompts. No cost."""
     frames = 0
 
-    def __init__(self, url: str, fps: float = 10.0, timeout: float = 120):
-        self.url, self.fps, self.timeout = url.rstrip("/"), fps, timeout
+    def __init__(self, url: str, fps: float = 10.0, stride: int = 2, timeout: float = 120):
+        # stride 2 = track at fps/2: ~1.8x faster per chunk on dsp, same objects found (cluster benchmark 2026-11-01)
+        self.url, self.fps, self.stride, self.timeout = url.rstrip("/"), fps, stride, timeout
 
     def track(self, chunk, prompts, t0, errors: list[str] | None = None):
-        q = urllib.parse.urlencode({"prompts": ",".join(prompts), "fps": self.fps})
+        q = urllib.parse.urlencode({"prompts": ",".join(prompts), "fps": self.fps, "stride": self.stride})
         req = urllib.request.Request(f"{self.url}/track?{q}", pathlib.Path(chunk).read_bytes(), {"Content-Type": "video/mp4"})
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
