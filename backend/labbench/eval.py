@@ -129,6 +129,8 @@ def timed_main(cc4d: pathlib.Path, sessions: pathlib.Path, held_out: set[str], a
     sess = {p.name.split(".")[0]: json.loads(p.read_text()) for p in sorted(sessions.glob("*.session.json"))}
     if protocol:
         proto = Protocol.model_validate_json(protocol.read_text())
+        if sess.pop(proto.source_clip, None) is not None:     # the expert run the protocol learned from is not a test
+            print(f"not scored: {proto.source_clip} (the protocol's expert run)")
         sess = {c: realign(s, proto) for c, s in sess.items()}
     missing = sorted(set(recs) - set(sess))
     groups = {"tune": sorted(set(sess) - held_out), "held-out": sorted(set(sess) & held_out)}

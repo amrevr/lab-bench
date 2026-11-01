@@ -266,7 +266,7 @@ class Aligner:
             fresh = step.id not in self.done
             self.done.setdefault(step.id, cur)
             for m in self.steps:
-                if self._follows(step.id, m.id) and m.id not in self.done and not m.optional:
+                if self._follows(step.id, m.id) and m.id not in self.done and not m.optional and m.visible:
                     after = [c for d, c in self.done.items() if self._follows(d, m.id)]   # an unordered peer is no evidence
                     if len(after) >= self.SKIP_AFTER:
                         out.append(self._emit(t, VerdictKind.SKIPPED, m.id,
@@ -284,7 +284,7 @@ class Aligner:
         conf = min((e.conf for _, e in seen), default=0.5)
         out = []
         for s in self.steps:
-            if s.id not in self.done and not s.optional:
+            if s.id not in self.done and not s.optional and s.visible:
                 out.append(self._emit(t_end, VerdictKind.SKIPPED, s.id,
                     (f"Step {s.id} ('{s.label}') was never done.", f"Did you do '{s.label}' (step {s.id})?"), seen[-1:], conf, gated=False))
         return [v for v in out if v]

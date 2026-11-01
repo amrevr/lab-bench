@@ -270,3 +270,15 @@ class NounMatchTests(unittest.TestCase):
         self.assertFalse(_same("salt", "pepper"))
         self.assertFalse(_same("brown sugar", "salt"))
         self.assertTrue(_same("olive oil", "olives"))   # known limit: a modifier word matches its noun
+
+
+class VisibilityTests(unittest.TestCase):
+    def test_a_step_not_visible_in_the_expert_run_is_never_asked_about(self):
+        from labbench.schema import Protocol
+        steps = [Step(id=1, label="a", action="cut", obj="tomato"), Step(id=2, label="b", action="wipe", obj="knife", visible=False),
+                 Step(id=3, label="c", action="place", obj="tomato", target="plate"), Step(id=4, label="d", action="pour", obj="oil")]
+        al = Aligner(Protocol(name="t", source_clip="t", steps=steps))
+        for t, a, o, tg in ((0, "cut", "tomato", None), (10, "place", "tomato", "plate"), (20, "pour", "oil", None)):
+            al.feed(Event(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=0.9, chunk=[t, t + 3]))
+        al.finish(30)
+        self.assertNotIn(2, [v.step_id for v in al.verdicts if v.mode != "ok"])
