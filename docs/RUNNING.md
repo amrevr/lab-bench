@@ -23,6 +23,10 @@ python3 -m pip install -r backend/requirements.txt     # pydantic, imageio-ffmpe
 cd backend && python3 -m unittest discover -s tests    # 42 tests at PR #22
 python3 -m labbench.eval                               # synthetic self-test, 4 synthetic error clips
 python3 -m labbench.eval --root <dir> --manifest <manifest.json>
+python3 -m labbench.eval --cc4d ../fixtures/recipe12/cc4d_error_annotations.json --sessions <dir of *.session.json> \
+    --held-out 12_48,12_51,12_9,12_13,12_16 [--realign ../fixtures/recipe12/protocol.json]
+    # timed scoring vs CaptainCook4D step times: strict (right step, kind, on time) and lenient side by side,
+    # false alarms mid-clip vs at end, EgoPER EDA and omission metrics, recording-level TPR/FPR/balanced F1
 python3 ../scripts/calibrate.py                        # hit vs false alarm per kind, suggests thresholds
 ```
 
