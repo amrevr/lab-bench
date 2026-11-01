@@ -28,8 +28,19 @@ def _norm(x: str) -> str:
     return SYNONYMS.get(x, x)
 
 
+def _words(x: str) -> set[str]:
+    return {w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w for w in _norm(x).split()}
+
+
 def _same(a: str | None, b: str | None) -> bool:
-    return bool(a) and bool(b) and _norm(a) == _norm(b)
+    """Same thing: equal, or one name's words contain the other's ("tomato slices" ~ "tomato", "black pepper" ~
+    "pepper"), so generated protocols and the vision model need not word things identically."""
+    if not a or not b:
+        return False
+    if _norm(a) == _norm(b):
+        return True
+    wa, wb = _words(a), _words(b)
+    return wa <= wb or wb <= wa
 
 
 class Aligner:
@@ -70,7 +81,7 @@ class Aligner:
         (the tomato, the plate) names the destination: make it the target and leave the ingredient unknown."""
         ev = ev.model_copy(update={"action": ACTION_SYNONYMS.get(ev.action.lower().strip(), ev.action.lower().strip())})
         o = _norm(ev.obj)
-        if ev.action in SPRINKLE_ACTIONS and (ev.action, o) not in self.ingredients and (o in SURFACES or o in self.names):
+        if ev.action in SPRINKLE_ACTIONS and not any(a == ev.action and _same(i, o) for a, i in self.ingredients) and (o in SURFACES or self._known(o)):
             ev.obj, ev.target = "", ev.target or o
         return ev
 
@@ -93,7 +104,7 @@ class Aligner:
         a place the recipe never mentions (fridge, cutting board) means this is some other action."""
         if not ev.obj:
             return None, "none"
-        cands = [s for s in self.steps if (ev.target is None or s.target is None or _norm(ev.target) in self.names)
+        cands = [s for s in self.steps if (ev.target is None or s.target is None or self._known(ev.target))
                  and s.action == ev.action and _same(s.obj, ev.obj) and s.id not in self.done]
         if cands:
             s = next((c for c in cands if _same(c.target, ev.target)), cands[0])
@@ -109,9 +120,13 @@ class Aligner:
         for s in self.steps:
             if s.action == ev.action and not _same(s.obj, ev.obj) and s.id not in self.done and (
                 s.target is None or _same(s.target, ev.target)
-            ) and _norm(ev.obj) not in self.names:     # a protocol object in another role is not a wrong item
+            ) and not self._known(ev.obj):     # a protocol object in another role is not a wrong item
                 return s, "item"
         return None, "none"
+
+    def _known(self, x: str) -> bool:
+        """A name the recipe itself uses (as any step's object or target), matched leniently like _same."""
+        return any(_same(x, n) for n in self.names)
 
     def _follows(self, d: int, s: int) -> bool:
         """Must step d come after step s? A partial-order protocol answers from its prerequisite graph; a hand-written

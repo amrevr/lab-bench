@@ -259,3 +259,13 @@ class IssueTests(unittest.TestCase):
         self.assertEqual([v.kind.value for v in al.feed(mk(0))], ["on_track"])
         self.assertEqual([(v.kind.value, v.step_id) for v in al.feed(mk(5, "spill"))], [("wrong_technique", 1)])
         self.assertEqual(Aligner(p).feed(mk(0, "none")), Aligner(p).feed(mk(0)))      # "none" is no issue
+
+
+class NounMatchTests(unittest.TestCase):
+    def test_names_match_by_contained_words(self):
+        from labbench.pipeline.align import _same
+        self.assertTrue(_same("tomato slices", "tomato"))
+        self.assertTrue(_same("black pepper", "pepper"))
+        self.assertTrue(_same("Platter", "plate"))
+        self.assertFalse(_same("salt", "pepper"))
+        self.assertFalse(_same("olive oil", "olives"))
