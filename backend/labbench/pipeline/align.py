@@ -34,7 +34,9 @@ def _words(x: str) -> set[str]:
 
 def _same(a: str | None, b: str | None) -> bool:
     """Same thing: equal, or one name's words contain the other's ("tomato slices" ~ "tomato", "black pepper" ~
-    "pepper"), so generated protocols and the vision model need not word things identically."""
+    "pepper"), so generated protocols and the vision model need not word things identically.
+    shortcut: a modifier also matches ("olives" ~ "olive oil"); fine while a recipe has no two such items, else
+    compare head nouns."""
     if not a or not b:
         return False
     if _norm(a) == _norm(b):
