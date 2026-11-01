@@ -6,5 +6,6 @@
   { "id": 90, "label": "Add chocolate to mug", "recipe_text": "Add-Add 2 pieces of chocolate to the mug", "action": "add", "aliases": [ "drop", "place" ], "obj": "chocolate", "target": "mug", "after": [ 89 ] },
   { "id": 84, "label": "Add cinnamon to mug", "recipe_text": "Add-Add 1/5 teaspoon cinnamon to the mug", "action": "add", "aliases": [ "pour", "sprinkle" ], "obj": "cinnamon", "target": "mug", "after": [ 89 ] },
   { "id": 85, "label": "Mix mug contents", "recipe_text": "Mix-Mix the contents of the mug", "action": "mix", "aliases": [ "blend", "stir" ], "obj": "mug", "after": [ 84, 87, 90 ] },
-  { "id": 83, "label": "Heat mug contents and serve", "recipe_text": "Heat-Heat the contents of the mug for 1 minute and serve", "action": "heat", "aliases": [ "microwave", "warm" ], "obj": "mug", "after": [ 85 ] } ]
+  { "id": 83, "label": "Heat mug contents and serve", "recipe_text": "Heat-Heat the contents of the mug for 1 minute and serve", "action": "heat", "aliases": [ "microwave", "warm" ], "obj": "mug", "after": [ 85 ], "seen_as": [
+    { "action": "place", "target": "microwave" } ] } ]
 }

@@ -39,6 +39,21 @@ def ask_glimmer(lines: list[str]) -> list[dict]:
     return json.JSONDecoder().raw_decode(text[text.index("["):])[0]
 
 
+def share_forms(steps: list[dict]) -> list[dict]:
+    """Steps whose verbs are aliases of each other (heat ~ microwave) look the same on camera: share their seen_as."""
+    verbs = lambda st: {st["action"], *st.get("aliases", [])}
+    for a in steps:
+        for b in steps:
+            if a is not b and (a["action"] in verbs(b) or b["action"] in verbs(a)):
+                for v in b.get("seen_as", []):
+                    if v not in a.setdefault("seen_as", []):
+                        a["seen_as"].append(v)
+    for st in steps:
+        if not st.get("seen_as"):
+            st.pop("seen_as", None)
+    return steps
+
+
 def build(graph: dict, desc: dict, annotations: dict, recipe: int) -> dict:
     by_text = {v.strip(): int(k) for k, v in desc.items()}
     local = {k: v for k, v in graph["steps"].items() if v not in ("START", "END")}
@@ -65,7 +80,7 @@ def build(graph: dict, desc: dict, annotations: dict, recipe: int) -> dict:
                       **({"technique": n["technique"].lower().strip()} if n.get("technique") else {}),
                       **({"after": after[g]} if after.get(g) else {})})
     return {"name": f"{normal['activity_name']} (CaptainCook4D recipe {recipe}, generated)",
-            "source_clip": normal["recording_id"], "partial_order": True, "steps": steps}
+            "source_clip": normal["recording_id"], "partial_order": True, "steps": share_forms(steps)}
 
 
 def main() -> None:

@@ -13,6 +13,7 @@ ORDER_GAP = 3.0    # s (one chunk): events closer than this in time are not orde
 STRONG = 0.6       # an event this confident backs a verdict alone; weaker ones need a second window. 0.6 on all 17 recipe-12 clips (Glimmer): same catches and false alarms as 0.8, warnings up to 5 min earlier; 0.5 adds a false alarm
 MIN_CONF = 0.5     # events below this confidence are ignored for ordering/attempts
 ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be corroborated
+CONTINUE_GAP = 30.0   # s: an event this soon after a step with the same form is that step continuing
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
 ACTION_SYNONYMS = {"season": "sprinkle", "garnish": "sprinkle", "drizzle": "pour"}
 SPRINKLE_ACTIONS = {"sprinkle", "pour"}   # the obj of these is the ingredient; the vision model often names what it lands on
@@ -59,7 +60,8 @@ class Aligner:
     def __init__(self, protocol: Protocol, thresholds: dict = THRESHOLDS):
         self.thresholds, self._n = thresholds, 0
         self.steps = protocol.steps
-        self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n}
+        self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n} | {
+            _norm(v["target"]) for s in self.steps for v in s.seen_as if v.get("target")}   # the microwave of 'place -> microwave'
         self.ingredients = {(s.action, _norm(s.obj)) for s in self.steps}
         self.pos = {s.id: i for i, s in enumerate(protocol.steps)}   # step ids need not be sorted
         self.partial = protocol.partial_order
@@ -112,6 +114,13 @@ class Aligner:
             return None, "none"
         cands = [s for s in self.steps if (ev.target is None or s.target is None or self._known(ev.target))
                  and self._is(s, ev) and s.id not in self.done]
+        if cands and self.partial:     # repeated forms (heat ~ microwave): a step whose prerequisites are done first,
+            ready = [c for c in cands if all(a in self.done for a in c.after)]
+            if not ready and any(self._is(d, ev) and ev.t_start - e.t_end <= CONTINUE_GAP   # else it is the step
+                                 for d, (_, e) in ((d, self.done[d]) for d in self.done      # just done, continuing
+                                                   if d in self.pos) for d in [self.steps[self.pos[d]]]):
+                return None, "none"
+            cands = ready or cands
         if cands:
             s = next((c for c in cands if _same(c.target, ev.target)), cands[0])
             if s.technique and ev.technique and not _same(s.technique, ev.technique):
