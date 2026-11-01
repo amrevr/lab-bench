@@ -36,6 +36,29 @@ SYSTEM = (
 )
 
 
+TECH_DEFS = (" Technique, by what the pieces look like: slice = flat rounds of even thickness; dice = small cubes;"
+             " chop = rough irregular pieces; wedge = wedges cut through the core; tear = torn by hand.")
+HONEST = " The person may skip, repeat or reorder steps: report only what the keyframes show."
+
+
+def prompt_extra(style: str, steps) -> str:
+    """Prompt variants under test: full (labels + techniques, ordered), steps (ordered action/object, no technique),
+    vocab (unordered action/object), techdefs (technique definitions only), steps+techdefs."""
+    pair = lambda st: f"{st.action} {st.obj}" + (f" on {st.target}" if st.target else "")
+    if style == "full":
+        return (" The procedure, in the expert's order: " + "; ".join(
+            f"{i}. {st.label} ({pair(st)}{', ' + st.technique if st.technique else ''})" for i, st in enumerate(steps, 1))
+            + "." + HONEST + " Never report a step just because it should come next.")
+    out = ""
+    if style.startswith("steps"):
+        out += " The steps of this procedure, in the expert's order: " + "; ".join(f"{i}. {pair(st)}" for i, st in enumerate(steps, 1)) + "." + HONEST
+    if style == "vocab":
+        out += " Actions that occur in this procedure, in any order: " + "; ".join(sorted({pair(st) for st in steps})) + "." + HONEST
+    if style.endswith("techdefs"):
+        out += TECH_DEFS
+    return out
+
+
 class VisionError(Exception):
     """The reply was missing, unparseable, or the request failed, twice. [] from `events` means idle."""
 
@@ -74,13 +97,14 @@ def summarize(tracks: list[Track]) -> str:
 
 class Vision:
     def __init__(self, backend: str | None = None, base_url: str | None = None, api_key: str | None = None,
-                 model: str | None = None, names: list[str] = ()):
+                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = ""):
         backend = backend or os.environ.get("VISION_BACKEND", "glimmer")
         url, name, key_env = BACKENDS[backend]
         self.backend = backend
         self.base_url = (base_url or url).rstrip("/")
         self.model = model or name
         self.system = SYSTEM + (f" Use these names where they fit: {', '.join(names)}." if names else "")
+        self.system += prompt_extra(style, steps)
         self.api_key = api_key or os.environ.get(key_env, "")
 
     def _chat(self, messages: list[dict], max_tokens: int = 600) -> str:
