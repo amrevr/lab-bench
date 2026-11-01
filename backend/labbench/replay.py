@@ -69,6 +69,7 @@ def main() -> None:
     ap.add_argument("--height", type=int, default=480)
     ap.add_argument("--protocol-prompt", default="", choices=["", "full", "steps", "vocab", "techdefs", "steps+techdefs"],
                     help="experimental prompt variant (see vision.prompt_extra)")
+    ap.add_argument("--nframes", type=int, default=4, help="keyframes per window sent to the vision model")
     ap.add_argument("--issues", action="store_true", help="ask the vision model for visible mishaps (spills, ...)")
     ap.add_argument("--sam-url", help="self-hosted SAM service (e.g. http://localhost:8001) instead of the hosted API")
     ap.add_argument("--no-sam", action="store_true", help="skip SAM (no tracks, no cost): verdicts do not use tracks")
@@ -110,7 +111,7 @@ def main() -> None:
         fut = None if a.no_sam else sam_pool.submit(track_window, i, s, e)
         try:
             t0 = t()
-            kf = chunker.keyframes(a.clip, s, e, work / "frames" / clip)
+            kf = chunker.keyframes(a.clip, s, e, work / "frames" / clip, n=a.nframes)
             h["t"]["keyframes"] = round(t() - t0, 2)
             evs, h["vision"] = see(kf, s, e)
             h["t"]["vision"] = round(t() - t0 - h["t"]["keyframes"], 2)
@@ -208,7 +209,7 @@ def main() -> None:
     session["verdicts"] = [v.model_dump(mode="json") for v in al.verdicts]
     session["run"] = {"backend": a.backend, "pace": a.pace, "start": a.start, "end": a.end, "fps": a.fps,
                       "height": a.height, "billed_frames": sam.frames, "cost_usd": round(sam.frames * FRAME_COST, 3),
-                      "errors": errors, "aborted": aborted, "no_sam": a.no_sam, "protocol_prompt": a.protocol_prompt, "issues": a.issues, "timings": timings,
+                      "errors": errors, "aborted": aborted, "no_sam": a.no_sam, "protocol_prompt": a.protocol_prompt, "issues": a.issues, "nframes": a.nframes, "timings": timings,
                       "sam_s": {"p50": pct(sam_s, .5), "p90": pct(sam_s, .9)} if sam_s else None, **stats}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(session, indent=1))
