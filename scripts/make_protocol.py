@@ -47,7 +47,7 @@ def build(graph: dict, desc: dict, annotations: dict, recipe: int) -> dict:
              for b in {e[1] for e in graph["edges"]} if str(b) in gid}
     recs = sorted((r for r in annotations.values() if r["activity_id"] == recipe), key=lambda r: r["recording_id"])
     normal = next(r for r in recs if not any(s.get("has_errors") for s in r["steps"]))
-    order = [s["step_id"] for s in normal["steps"] if s["step_id"] in gid.values()]
+    order = list(dict.fromkeys(s["step_id"] for s in normal["steps"] if s["step_id"] in gid.values()))   # repeats once
     order += [g for g in gid.values() if g not in order]             # a step the normal run skipped (optional)
     named = {int(x["id"]): x for x in ask_glimmer([f"{g}: {local[k]}" for k, g in gid.items()])}
     steps = []
