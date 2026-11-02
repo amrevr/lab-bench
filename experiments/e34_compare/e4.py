@@ -25,7 +25,8 @@ def instances():
             inst.append({"clip": c, "step": s["step_id"], "tags": tg, "label": lab, "t0": s["start_time"], "t1": s["end_time"],
                          "desc": "; ".join(e["description"] for e in s.get("errors", []) if e["tag"].replace(" Error", "") in POS)})
     pos = [i for i in inst if i["label"]]; neg = [i for i in inst if not i["label"]]
-    random.Random(0).shuffle(neg); return sorted(pos + neg[:a.neg], key=lambda i: (i["clip"], i["step"]))
+    random.Random(0).shuffle(neg)   # sample first, then drop clips with no local video, so the already-run set stays the same
+    return sorted((i for i in pos + neg[:a.neg] if (CLIPS / f'{i["clip"]}.mp4').exists()), key=lambda i: (i["clip"], i["step"]))
 
 SYS_CMP = "You compare how a novice performed one cooking step against an expert reference video of the same step. Frames of each are tiled left-to-right, top-to-bottom in time order."
 Q = {
@@ -56,7 +57,7 @@ def run(v, i):
             "diff": (j or {}).get("difference"), "sec": round(dt, 1), "raw": None if j else raw[:200]}
 
 def report(vs):
-    rows = [json.loads(l) for l in out.read_text().splitlines()]
+    rows = list({(r["v"], r["clip"], r["step"]): r for r in map(json.loads, out.read_text().splitlines())}.values())
     for v in vs:
         R = [r for r in rows if r["v"] == v]; ok = [r for r in R if r["score"] is not None]
         P = [r["score"] for r in ok if r["label"]]; N = [r["score"] for r in ok if not r["label"]]
@@ -76,7 +77,7 @@ def report(vs):
         for r in hit: print(f"      [{r['clip']} s{r['step']} {','.join(r['tags'])}] ann: {r['desc'][:70]} || model: {r['cat']}: {(r['diff'] or '')[:90]}")
 
 if a.report: report(a.report.split(",")); sys.exit()
-done = {(json.loads(l)["v"], json.loads(l)["clip"], json.loads(l)["step"]) for l in out.read_text().splitlines()} if out.exists() else set()
+done = {(r["v"], r["clip"], r["step"]) for r in map(json.loads, out.read_text().splitlines()) if r["score"] is not None} if out.exists() else set()  # failed rows get retried; report() keeps the last row per key
 inst = instances(); print(len(inst), "instances", sum(i["label"] for i in inst), "pos", flush=True)
 for v in a.variants.split(","):
     todo = [i for i in inst if (v, i["clip"], i["step"]) not in done]

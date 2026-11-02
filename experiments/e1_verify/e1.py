@@ -1,6 +1,7 @@
 """E1: verification (candidates + decoys, yes/no/unclear) vs the current describe prompt, on sampled 3 s windows.
 usage: e1.py prep R | e1.py run R COND[,COND..]   (COND = V1 V2 D; `run` calls Glimmer: wrap in glimmer_queue.sh)"""
-import json, os, pathlib, random, sys, time, base64
+import json, os, pathlib, random, sys, time, base64, site
+sys.path.append(site.getusersitepackages())   # `python3 -I` drops user site-packages, where pydantic lives
 from concurrent.futures import ThreadPoolExecutor
 ROOT = pathlib.Path("/Users/r/SharedContainer/lab-bench/.claude/worktrees/design-leads")
 sys.path.insert(0, str(ROOT / "backend"))
