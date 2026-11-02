@@ -40,10 +40,15 @@ task graphs by Glimmer (`scripts/make_protocol.py`), not hand-tuned.
 
 | Recipe (clips) | Split | Error steps caught strict (in time) | Lenient | False alarms mid / end | Error clips caught | Normal clips with a mid-clip alarm | EgoPER EDA |
 |---|---|---|---|---|---|---|---|
-| 12 tomato salad (16) | tune | 8/24 (4) | 13/24 | 4 / 8 | 4/4 | 3/7 | 81/99 |
-| 12 | held-out | 1/7 (1) | 3/7 | 7 / 2 | 1/2 | 1/3 | 34/45 |
-| 8 hot chocolate (15) | dev (generalization fixes tuned here) | 19/41 (13) | 33/41 | 11 / 26 | 9/9 | 2/6 | 71/105 |
-| 10 pinwheels (11) | first untouched, then informed visibility calibration | 15/91 (15) | 30/91 | 26 / 7 | 8/8 | 3/3 | 109/187 |
+| 12 tomato salad (16) | tune | 8/24 (4) | 13/24 | 4 / 8 | 4/4 | 3/7 | 77/95 |
+| 12 | held-out | 1/7 (1) | 3/7 | 7 / 2 | 1/2 | 1/3 | 33/44 |
+| 8 hot chocolate (15) | dev (generalization fixes tuned here) | 19/41 (13) | 33/41 | 11 / 26 | 9/9 | 2/6 | 65/89 |
+| 10 pinwheels (11) | first untouched, then informed visibility calibration | 17/91 (17) | 34/91 | 24 / 7 | 8/8 | 3/3 | 104/180 |
+
+EDA leaves out Measurement/Temperature-only steps, like every other line. Mishap ("issue") verdicts are counted
+separately: 10 caught an annotated error and 19 were false alarms across the three recipes (~35% precise). On
+recipe 8 the issue verdicts themselves add 3 strict catches; the rest of the gain over the two baseline runs comes
+from Glimmer's different events under the longer prompt and is within run-to-run noise.
 
 Recipe 10's first, fully untouched result (before visibility calibration): strict 25/91, lenient 48/91, 83 false
 alarms, EDA 49%.
@@ -53,8 +58,9 @@ Run-to-run variance (same pipeline, recipe 8, two runs): strict 11 vs 15, in tim
 (timeouts under load) are about 1%.
 
 What moved accuracy (measured):
-- Visible mishaps (`--issues`): recipe 8 strict 11-15 -> 19, lenient 28 -> 33 (beyond both baseline runs);
-  recipe 10 lenient 16 -> 30. Issue flags are ~45% precise; more "was there a spill?" asks.
+- Visible mishaps (`--issues`): lenient catches up on every recipe (recipe 8: 28 -> 33 over two baseline runs;
+  recipe 10: 16 -> 34) and every error clip caught on recipes 8 and 10; issue verdicts are ~35% precise, so more
+  "was there a spill?" asks. Strict gains are partly run-to-run noise.
 - Generated protocols + lenient noun matching + verb aliases / container steps / on-camera forms: recipe 12's
   generated protocol matches the hand-written one; recipe 8 false alarms 36 -> 32 at equal catches.
 - Visibility calibration from the expert run: recipe 10 false alarms 83 -> 18, EDA 49% -> 59%, at a recall cost.
@@ -68,3 +74,8 @@ from one expert run); SAM 3.1 in the verdict path (12_41 fell 16 min behind).
 
 Open: 8 frames per window (`--nframes 8 --pair`) is queued for a quiet GPU window; latency was not re-measured
 under today's shared-GPU load (another user's jobs pushed a 4-frame Glimmer call from ~2 s to ~12 s).
+
+Evaluation caveats (from code review of PR #27): the 0.6 gate was chosen on the same recipe-12 clips reported as
+"tune"; recipe 8 was development data; `--issues` default and visibility calibration were decided after seeing
+recipes 8, 10 and 12. The only clean generalization number is the first recipe-10 run above; a fresh recipe scored
+with everything frozen is the next honest test.

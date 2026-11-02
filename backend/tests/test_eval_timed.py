@@ -53,5 +53,16 @@ class TimedScoringTests(unittest.TestCase):
         self.assertEqual(summarize_timed([normal])["rec_f1_balanced"], 0.0)
 
 
+    def test_a_step_that_never_happened_has_no_window(self):
+        r = rec("c", [step(1, -1, -1, "Technique Error")])
+        self.assertFalse(score_timed(sess([{"step_id": 1, "kind": "wrong_technique", "t": 5}]), r)["rows"][0]["strict"])
+
+    def test_issue_verdicts_are_counted_separately(self):
+        r = rec("c", [step(1, 10, 20, "Technique Error"), step(2, 30, 40)])
+        out = score_timed(sess([{"step_id": 1, "kind": "wrong_technique", "t": 15, "source": "issue"},
+                                {"step_id": 2, "kind": "wrong_technique", "t": 35, "source": "issue"}]), r)
+        self.assertEqual((out["issue_tp"], out["issue_fa"]), (1, 1))
+
+
 if __name__ == "__main__":
     unittest.main()

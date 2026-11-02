@@ -80,6 +80,8 @@ def main() -> None:
     ap.add_argument("--workdir", type=pathlib.Path, help="chunks and keyframes (default: a temp dir)")
     ap.add_argument("--out", type=pathlib.Path, required=True)
     a = ap.parse_args()
+    if a.pair and a.nframes % 2:
+        sys.exit("--pair needs an even --nframes")
 
     clip, protocol = a.clip.stem, Protocol.model_validate_json(a.protocol.read_text())
     work = a.workdir or pathlib.Path(tempfile.mkdtemp(prefix="replay-"))
@@ -106,6 +108,8 @@ def main() -> None:
             return sam.track(chunk, list(CONCEPTS), s, failed), failed, round(time.time() - t1, 2)
         except Exception as x:
             return [], failed + [f"{type(x).__name__}: {x}"[:200]], round(time.time() - t1, 2)
+        finally:
+            sam_done[0] += 1
 
     def work_on(i: int, s: float, e: float):
         """-> (events, health, SAM future or None); health = {"vision": error or None, "t": stage seconds}."""
@@ -129,6 +133,7 @@ def main() -> None:
             done[0] += 1
 
     done, events, prev, errors, aborted, timings = [0], [], [], [], False, []
+    sam_done = [0] if not a.no_sam else done          # windows whose SAM call has finished (NullSam: none are made)
     sam_pool = ThreadPoolExecutor(a.sam_workers)
     pending: list = []          # (s, e, events of the window as (Event, session dict), SAM future), window order
 
@@ -176,7 +181,7 @@ def main() -> None:
         for i, (s, e) in enumerate(wins):
             if a.pace == "realtime":
                 time.sleep(max(0.0, wall0 + (e - a.start) - time.time()))
-            if (sam.frames + (i - done[0]) * est) * FRAME_COST > a.max_spend:
+            if (sam.frames + (i - sam_done[0]) * est) * FRAME_COST > a.max_spend:   # SAM still in flight counts
                 print(f"ABORT: max spend ${a.max_spend:.2f} would be exceeded", file=sys.stderr)
                 aborted = True
                 break

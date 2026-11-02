@@ -282,3 +282,16 @@ class VisibilityTests(unittest.TestCase):
             al.feed(Event(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=0.9, chunk=[t, t + 3]))
         al.finish(30)
         self.assertNotIn(2, [v.step_id for v in al.verdicts if v.mode != "ok"])
+
+
+    def test_a_mishap_and_a_technique_word_on_one_step_are_both_spoken(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="cut", action="cut", obj="tomato", technique="slice")])
+        al = Aligner(p)
+        mk = lambda t, tech, issue=None: Event(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech,
+                                                issue=issue, conf=0.9, chunk=[t, t + 3])
+        al.feed(mk(0, "slice", "spill"))
+        al.feed(mk(5, "dice"))
+        self.assertEqual(sorted(((v.kind.value, v.source or "") for v in al.verdicts if v.mode != "ok")),
+                         [("wrong_technique", ""), ("wrong_technique", "issue")])
+        self.assertEqual(Aligner(p).feed(mk(0, "slice", "n/a")), Aligner(p).feed(mk(0, "slice")))

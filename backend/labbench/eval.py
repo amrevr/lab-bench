@@ -148,11 +148,12 @@ def timed_main(cc4d: pathlib.Path, sessions: pathlib.Path, held_out: set[str], a
                   f"recordings: error clips caught {f(s['rec_tpr'])}, normal clips with a mid-clip alarm {f(s['rec_fpr'])}, "
                   f"balanced F1 {s['rec_f1_balanced']}")
         s = by_w[30.0]
+        print(f"  issue (mishap) verdicts: {s['issue_tp']} caught an annotated error, {s['issue_fa']} false alarms")
         print(f"  EgoPER EDA {f(s['eda'])}, omission acc {f(s['omission_acc'])}, omission IoU {f(s['omission_iou'])}; "
               f"delay to strict catch (s) {s['delay_s']}, observation ratio {s['obs_ratio']}")
     if missing:
         print(f"not scored (no session): {', '.join(missing)}")
-    print("Measurement/Temperature-only steps are not visible to the pipeline and are left out of every line above.")
+    print("Measurement/Temperature-only steps are not visible to the pipeline and are left out of every line above (EDA included).")
 
 
 
@@ -190,7 +191,7 @@ def _strict(v: dict, row: dict, w: float, last_t: float) -> bool:
                 return True
             continue
         a, b = row.get("order_span", (row["start"], row["end"])) if tag == "Order" else (row["start"], row["end"])
-        if a <= v["t"] <= b + w and v["t"] <= last_t:
+        if a >= 0 and a <= v["t"] <= b + w and v["t"] <= last_t:    # a step that never happened has no window
             return True
     return False
 
@@ -209,7 +210,8 @@ def score_timed(session: dict, rec: dict, w: float = 30.0) -> dict:
                          "at_end": bool(hit) and hit["t"] > last_t,
                          "delay_s": round(hit["t"] - r.get("order_span", (r["start"],))[0], 1) if hit and r["start"] >= 0 else None})
     tp = [v for v in verdicts if any(_strict(v, r, w, last_t) for r in vis)]
-    fa = [v for v in verdicts if v not in tp and v["step_id"] not in hidden]   # a verdict on a not-visible error step is neither
+    tp_i = {i for i, v in enumerate(verdicts) if any(_strict(v, r, w, last_t) for r in vis)}
+    fa = [v for i, v in enumerate(verdicts) if i not in tp_i and v["step_id"] not in hidden]   # neither, on a not-visible error step
     steps = {st["step_id"]: st for st in rec["step_annotations"]}
     flagged = {v["step_id"] for v in verdicts}
     erroneous = {r["step_id"] for r in vis}
@@ -220,7 +222,10 @@ def score_timed(session: dict, rec: dict, w: float = 30.0) -> dict:
             "fa_mid": sum(v["t"] <= last_t for v in fa), "fa_end": sum(v["t"] > last_t for v in fa),
             "mid_clip_nonok": sum(v["t"] <= last_t for v in verdicts),
             # EgoPER EDA: every annotated step is a segment, predicted erroneous if any non-ok verdict lands on it
-            "eda": (sum((s in flagged) == (s in erroneous) for s in steps), len(steps)),
+            "eda": (sum((s in flagged) == (s in erroneous) for s in steps if s not in hidden),
+                    sum(s not in hidden for s in steps)),
+            "issue_tp": sum(i in tp_i for i, v in enumerate(verdicts) if v.get("source") == "issue"),
+            "issue_fa": sum(v.get("source") == "issue" for v in fa),
             "omission": (len(missing & asked), len(missing), len(missing | asked)),
             "obs_ratio": [round(v["t"] / float(session["run"]["end"]), 2) for v in tp if v["t"] <= last_t]}
 
@@ -243,6 +248,7 @@ def summarize_timed(results: list[dict]) -> dict:
             "tp_verdicts": sum(x["tp"] for x in results),
             "fa_mid": sum(x["fa_mid"] for x in results), "fa_end": sum(x["fa_end"] for x in results),
             "eda": (sum(x["eda"][0] for x in results), sum(x["eda"][1] for x in results)),
+            "issue_tp": sum(x["issue_tp"] for x in results), "issue_fa": sum(x["issue_fa"] for x in results),
             "omission_acc": (sum(o[0] for o in om), sum(o[1] for o in om)),
             "omission_iou": (sum(o[0] for o in om), sum(o[2] for o in om)),
             "rec_tpr": (tp_rec, len(err)), "rec_fpr": (fp_rec, len(norm)),

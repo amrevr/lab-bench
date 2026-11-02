@@ -15,6 +15,7 @@ MIN_CONF = 0.5     # events below this confidence are ignored for ordering/attem
 ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be corroborated
 CONTINUE_GAP = 30.0   # s: an event this soon after a step with the same form is that step continuing
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
+NO_ISSUE = {"", "none", "null", "no", "n/a", "na", "nan", "false", "clean", "nothing", "ok", "fine", "no issue"}
 ACTION_SYNONYMS = {"season": "sprinkle", "garnish": "sprinkle", "drizzle": "pour"}
 SPRINKLE_ACTIONS = {"sprinkle", "pour"}   # the obj of these is the ingredient; the vision model often names what it lands on
 SURFACES = {"plate", "board", "cutting board", "tray", "platter", "dish", "bowl", "table", "counter"}
@@ -172,37 +173,38 @@ class Aligner:
         return ev.conf >= STRONG or self._corroborated(ev, kind == VerdictKind.WRONG_TECHNIQUE)
 
     def _emit(self, t: float, kind: VerdictKind, sid: int, msg: tuple[str, str], contrib: list[tuple[int, Event]],
-              conf: float | None = None, gated: bool = True) -> Verdict | None:
+              conf: float | None = None, gated: bool = True, source: str | None = None) -> Verdict | None:
         """msg: (statement for a flag, confirming question for an ask).
         contrib: (event_idx, event) pairs behind the verdict; conf defaults to their minimum.
 
         A verdict resting on a weak event nobody corroborates yet is parked, not spoken (_release)."""
-        if (kind, sid) in self._reported:
+        key = (kind, sid, source)          # a mishap and a technique word on one step are separate findings
+        if key in self._reported:
             return None
         if gated and not all(self._backed(kind, e) for _, e in contrib):
-            self.parked[(kind, sid)] = (kind, sid, msg, contrib, conf)
+            self.parked[key] = (kind, sid, msg, contrib, conf, source)
             return None
         conf = min(e.conf for _, e in contrib) if conf is None else conf
         ev = [Evidence(clip=e.clip, t_start=e.t_start, t_end=e.t_end, frame_t=e.frame_refs, event_idx=i)
               for i, e in contrib]
         mode = mode_for(kind, conf, self.thresholds)
         v = Verdict(t=t, step_id=sid, kind=kind, conf=round(conf, 2), mode=mode,
-                    message=msg[mode == "ask"], evidence=ev)
+                    message=msg[mode == "ask"], evidence=ev, source=source)
         if v.mode == "ok" and kind != VerdictKind.ON_TRACK:
             return None
-        self._reported.add((kind, sid))
+        self._reported.add(key)
         self.verdicts.append(v)
         return v
 
     def _release(self, t: float) -> list[Verdict]:
         """Speak parked verdicts whose evidence is now corroborated; withdraw skips of steps that have since happened."""
         out = []
-        for key, (kind, sid, msg, contrib, conf) in list(self.parked.items()):
+        for key, (kind, sid, msg, contrib, conf, source) in list(self.parked.items()):
             if kind == VerdictKind.SKIPPED and sid in self.done:
                 del self.parked[key]
             elif all(self._backed(kind, e) for _, e in contrib):
                 del self.parked[key]
-                out.append(self._emit(t, kind, sid, msg, contrib, conf, gated=False))
+                out.append(self._emit(t, kind, sid, msg, contrib, conf, gated=False, source=source))
         return [v for v in out if v]
 
     def feed(self, ev: Event) -> list[Verdict]:
@@ -213,15 +215,17 @@ class Aligner:
 
     def _issue(self, ev: Event, cur) -> list[Verdict]:
         """A visible mishap (spill, pile-up, ...) is a technique error on the step being done, even one already done."""
-        if not ev.issue or ev.issue.strip().lower() in ("", "none", "null", "no") or ev.conf < MIN_CONF:
+        if not ev.issue or ev.issue.strip().lower() in NO_ISSUE or ev.conf < MIN_CONF:
             return []
         cands = [s for s in self.steps if self._is(s, ev)]
-        s = next((c for c in cands if c.id not in self.done), cands[0] if cands else None)
+        undone = [c for c in cands if c.id not in self.done]
+        done = sorted((c for c in cands if c.id in self.done), key=lambda c: self.done[c.id][1].t_end)
+        s = undone[0] if undone else (done[-1] if done else None)    # the step under way, else the one done last
         if s is None:
             return []
         v = self._emit(ev.t_end, VerdictKind.WRONG_TECHNIQUE, s.id,
                        (f"Step {s.id} ('{s.label}'): that looked like a {ev.issue}.",
-                        f"Step {s.id} ('{s.label}'): was there a {ev.issue}?"), [cur])
+                        f"Step {s.id} ('{s.label}'): was there a {ev.issue}?"), [cur], source="issue")
         return [v] if v else []
 
     def _feed(self, ev: Event) -> list[Verdict]:

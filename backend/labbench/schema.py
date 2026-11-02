@@ -86,6 +86,7 @@ class Evidence(BaseModel):
 
 class Verdict(BaseModel):
     t: float                         # when the coach speaks (clip time, s)
+    source: Optional[str] = None     # "issue": raised from a reported mishap, not a technique word
     step_id: int
     kind: VerdictKind
     conf: float
