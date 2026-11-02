@@ -36,6 +36,7 @@ from .schema import Protocol  # noqa: E402
 
 FRAME_COST = 0.0002          # USD per billed SAM frame
 WORKERS = 5                  # windows in flight
+VISION_DOWN = 8              # that many vision request failures in a row abort the replay
 SAM_WORKERS = 3              # SAM chunks in flight; tracks attach late and never hold a verdict
 
 
@@ -137,6 +138,7 @@ def main() -> None:
 
     done, events, prev, errors, aborted, timings = [0], [], [], [], False, []
     sam_lock = threading.Lock()
+    down = 0                   # windows in a row whose vision request failed
     sam_done = [0] if not a.no_sam else done          # windows whose SAM call has finished (NullSam: none are made)
     sam_pool = ThreadPoolExecutor(a.sam_workers)
     pending: list = []          # (s, e, events of the window as (Event, session dict), SAM future), window order
@@ -201,6 +203,11 @@ def main() -> None:
             timings.append({"s": s, "queued": round(time.time() - fed_at, 2), **h.get("t", {})})
             stats["vision_idle"] += not evs and not h["vision"]
             stats["vision_failed"] += bool(h["vision"])
+            down = down + 1 if h["vision"] and "request" in h["vision"] else 0
+            if down >= VISION_DOWN:      # the model is unreachable (tunnel/server down): a session now would be empty
+                print(f"ABORT: {down} windows in a row could not reach the vision model; no session written",
+                      file=sys.stderr, flush=True)
+                os._exit(3)              # without waiting for the windows still queued
             if h["vision"]:
                 errors.append(f"{s:.1f}-{e:.1f}: vision: {h['vision']}")
                 print(f"window {s:.1f}-{e:.1f} failed: vision: {h['vision']}", file=sys.stderr)
