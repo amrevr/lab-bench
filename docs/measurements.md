@@ -28,3 +28,43 @@ Glimmer notes (2026-10-31, 12_119 keyframes, no SAM, events fed to the aligner):
   where verifying draft tokens for many requests saturates the GPUs: keep vision calls near one in flight. Quality
   on clean 12_119 is unchanged (55-61 event windows, 3 steps on track, 3-4 false asks in every run). The drafter
   needs `--gpu-memory-utilization 0.44` (about 32 GB per GPU instead of 26).
+
+## Accuracy and generalization (2026-11-01/02)
+
+Scored with `python -m labbench.eval --cc4d ... --realign <protocol>` against CaptainCook4D's own error annotations
+and step times (strict = right step, compatible verdict, during the step or within 30 s, not an end-of-clip ask
+except for omissions; lenient = any non-ok verdict on the step). The protocol's own expert clip is never scored.
+Glimmer 30B with the DFlash drafter, SAM off the verdict path, `--issues` on, visibility calibrated from the expert
+run. Recipe 12 uses its hand-written protocol; recipes 8 and 10 use protocols generated from the CaptainCook4D
+task graphs by Glimmer (`scripts/make_protocol.py`), not hand-tuned.
+
+| Recipe (clips) | Split | Error steps caught strict (in time) | Lenient | False alarms mid / end | Error clips caught | Normal clips with a mid-clip alarm | EgoPER EDA |
+|---|---|---|---|---|---|---|---|
+| 12 tomato salad (16) | tune | 8/24 (4) | 13/24 | 4 / 8 | 4/4 | 3/7 | 81/99 |
+| 12 | held-out | 1/7 (1) | 3/7 | 7 / 2 | 1/2 | 1/3 | 34/45 |
+| 8 hot chocolate (15) | dev (generalization fixes tuned here) | 19/41 (13) | 33/41 | 11 / 26 | 9/9 | 2/6 | 71/105 |
+| 10 pinwheels (11) | first untouched, then informed visibility calibration | 15/91 (15) | 30/91 | 26 / 7 | 8/8 | 3/3 | 109/187 |
+
+Recipe 10's first, fully untouched result (before visibility calibration): strict 25/91, lenient 48/91, 83 false
+alarms, EDA 49%.
+
+Run-to-run variance (same pipeline, recipe 8, two runs): strict 11 vs 15, in time 3 vs 9, mid-clip false alarms
+10 vs 3. Treat single-run differences under about 4 catches or 7 false alarms as noise. Glimmer call failures
+(timeouts under load) are about 1%.
+
+What moved accuracy (measured):
+- Visible mishaps (`--issues`): recipe 8 strict 11-15 -> 19, lenient 28 -> 33 (beyond both baseline runs);
+  recipe 10 lenient 16 -> 30. Issue flags are ~45% precise; more "was there a spill?" asks.
+- Generated protocols + lenient noun matching + verb aliases / container steps / on-camera forms: recipe 12's
+  generated protocol matches the hand-written one; recipe 8 false alarms 36 -> 32 at equal catches.
+- Visibility calibration from the expert run: recipe 10 false alarms 83 -> 18, EDA 49% -> 59%, at a recall cost.
+- Gate 0.6 instead of 0.8: same catches, warnings up to 5 min earlier.
+
+Ruled out (measured): skipping Glimmer's reasoning (misses most steps); protocol in the prompt with techniques
+(Glimmer echoes "slice"), steps-only or technique-definition prompts (more false alarms on 17 clips); gating
+end-of-clip asks on later steps (loses 5/6 omissions); merging two Glimmer runs (no better than the better run);
+frozen V-JEPA 2 ViT-L probes (error detection AUC ~0.55, below chance across recipes; step recognition 0.22-0.28
+from one expert run); SAM 3.1 in the verdict path (12_41 fell 16 min behind).
+
+Open: 8 frames per window (`--nframes 8 --pair`) is queued for a quiet GPU window; latency was not re-measured
+under today's shared-GPU load (another user's jobs pushed a 4-frame Glimmer call from ~2 s to ~12 s).
