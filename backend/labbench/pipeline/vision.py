@@ -101,13 +101,15 @@ def summarize(tracks: list[Track]) -> str:
 
 class Vision:
     def __init__(self, backend: str | None = None, base_url: str | None = None, api_key: str | None = None,
-                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = "", issues: bool = False, paired: bool = False):
+                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = "", issues: bool = False, paired: bool = False,
+                 timeout: float = 60):
         backend = backend or os.environ.get("VISION_BACKEND", "glimmer")
         url, name, key_env = BACKENDS[backend]
         self.backend = backend
         self.base_url = (base_url or url).rstrip("/")
         self.model = model or name
         self.paired = paired
+        self.timeout = timeout    # live: 60 s; offline accuracy runs on a loaded GPU: longer, so no window is dropped
         acts = list(dict.fromkeys([st.action for st in steps] + list(GENERIC_ACTIONS))) if steps else DEFAULT_ACTIONS
         self.system = SYSTEM.replace("{actions}", ",".join(acts)) + (ISSUES if issues else "") + (
             f" Use these names where they fit: {', '.join(names)}." if names else "")
@@ -125,7 +127,7 @@ class Vision:
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = urllib.request.Request(f"{self.base_url}/chat/completions", body, headers)
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
             try:
                 choice = json.load(r)["choices"][0]
             except (KeyError, IndexError, TypeError) as x:     # 200 with an error body or no choices

@@ -70,6 +70,8 @@ def main() -> None:
     ap.add_argument("--protocol-prompt", default="", choices=["", "full", "steps", "vocab", "techdefs", "steps+techdefs"],
                     help="experimental prompt variant (see vision.prompt_extra)")
     ap.add_argument("--nframes", type=int, default=4, help="keyframes per window sent to the vision model")
+    ap.add_argument("--vision-timeout", type=float, default=60, help="seconds before a vision call is a failure "
+                    "(raise for offline accuracy runs on a shared GPU so no window is dropped)")
     ap.add_argument("--pair", action="store_true", help="send keyframes two per image (8 frames in 4 images)")
     ap.add_argument("--issues", action=argparse.BooleanOptionalAction, default=True,
                     help="ask the vision model for visible mishaps (spills, ...); on by default: recall up on recipes 8/10/12")
@@ -86,7 +88,7 @@ def main() -> None:
     clip, protocol = a.clip.stem, Protocol.model_validate_json(a.protocol.read_text())
     work = a.workdir or pathlib.Path(tempfile.mkdtemp(prefix="replay-"))
     names = sorted({n for st in protocol.steps for n in (st.obj, st.target) if n})   # the recipe's own nouns
-    sam, vision, al = (NullSam() if a.no_sam else LocalSam(a.sam_url, fps=a.fps) if a.sam_url else MetaSam(fps=a.fps)), Vision(a.backend, names=names, steps=protocol.steps, style=a.protocol_prompt, issues=a.issues, paired=a.pair), Aligner(protocol)
+    sam, vision, al = (NullSam() if a.no_sam else LocalSam(a.sam_url, fps=a.fps) if a.sam_url else MetaSam(fps=a.fps)), Vision(a.backend, names=names, steps=protocol.steps, style=a.protocol_prompt, issues=a.issues, paired=a.pair, timeout=a.vision_timeout), Aligner(protocol)
     wins = [(a.start + s, a.start + e) for s, e in chunker.windows(a.end - a.start)]
     est = 0 if a.no_sam or a.sam_url else len(CONCEPTS) * max(50, round(3.0 * a.fps))   # billed frames per window (50 min per request)
     print(f"{len(wins)} windows, estimated SAM cost ${len(wins) * est * FRAME_COST:.2f} (cap ${a.max_spend:.2f})")
