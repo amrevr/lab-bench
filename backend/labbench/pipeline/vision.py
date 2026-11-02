@@ -101,12 +101,13 @@ def summarize(tracks: list[Track]) -> str:
 
 class Vision:
     def __init__(self, backend: str | None = None, base_url: str | None = None, api_key: str | None = None,
-                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = "", issues: bool = False):
+                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = "", issues: bool = False, paired: bool = False):
         backend = backend or os.environ.get("VISION_BACKEND", "glimmer")
         url, name, key_env = BACKENDS[backend]
         self.backend = backend
         self.base_url = (base_url or url).rstrip("/")
         self.model = model or name
+        self.paired = paired
         acts = list(dict.fromkeys([st.action for st in steps] + list(GENERIC_ACTIONS))) if steps else DEFAULT_ACTIONS
         self.system = SYSTEM.replace("{actions}", ",".join(acts)) + (ISSUES if issues else "") + (
             f" Use these names where they fit: {', '.join(names)}." if names else "")
@@ -136,7 +137,9 @@ class Vision:
     def events(self, keyframes: list[tuple[float, pathlib.Path]], tracks: list[Track],
                t0: float, t1: float, clip: str | None = None) -> list[Event]:
         content = [{"type": "text", "text": f"Clip window {t0:.1f}-{t1:.1f}s. Tracks: {summarize(tracks) or 'none'}. "
-                                            "Keyframes follow with their timestamps."}]
+                                            "Keyframes follow with their timestamps." + (
+                        " Each image shows two consecutive moments side by side (left, then right a fraction of a"
+                        " second later)." if self.paired else "")}]
         for t, p in keyframes:
             b64 = base64.b64encode(p.read_bytes()).decode()
             content += [{"type": "text", "text": f"t={t:.1f}s"},

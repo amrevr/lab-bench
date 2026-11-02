@@ -60,3 +60,14 @@ def keyframes(src: pathlib.Path, start: float, end: float, out_dir: pathlib.Path
         if p.exists():   # ffmpeg exits 0 but writes nothing when t is past the last decodable frame
             frames.append((t, p))
     return frames
+
+
+def pair_frames(frames: list[tuple[float, pathlib.Path]]) -> list[tuple[float, pathlib.Path]]:
+    """Consecutive keyframes side by side, two per image: twice the frames within the server's image limit.
+    Each pair keeps the left frame's timestamp."""
+    out = []
+    for (t, a), (_, b) in zip(frames[0::2], frames[1::2]):
+        dst = a.with_name(a.stem + "_pair.jpg")
+        _run([FFMPEG, "-y", "-i", str(a), "-i", str(b), "-filter_complex", "hstack", "-q:v", "4", str(dst)])
+        out.append((t, dst))
+    return out
