@@ -73,6 +73,7 @@ def main() -> None:
     ap.add_argument("--pair", action="store_true", help="send keyframes two per image (8 frames in 4 images)")
     ap.add_argument("--issues", action=argparse.BooleanOptionalAction, default=True,
                     help="ask the vision model for visible mishaps (spills, ...); on by default: recall up on recipes 8/10/12")
+    ap.add_argument("--sam-workers", type=int, default=SAM_WORKERS, help="SAM chunks in flight (match the service's workers)")
     ap.add_argument("--sam-url", help="self-hosted SAM service (e.g. http://localhost:8001) instead of the hosted API")
     ap.add_argument("--no-sam", action="store_true", help="skip SAM (no tracks, no cost): verdicts do not use tracks")
     ap.add_argument("--finish", action="store_true", help="at --end, call every step still undone skipped")
@@ -128,7 +129,7 @@ def main() -> None:
             done[0] += 1
 
     done, events, prev, errors, aborted, timings = [0], [], [], [], False, []
-    sam_pool = ThreadPoolExecutor(SAM_WORKERS)
+    sam_pool = ThreadPoolExecutor(a.sam_workers)
     pending: list = []          # (s, e, events of the window as (Event, session dict), SAM future), window order
 
     def drain(wait: bool = False):
