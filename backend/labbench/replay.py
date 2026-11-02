@@ -70,7 +70,8 @@ def main() -> None:
     ap.add_argument("--protocol-prompt", default="", choices=["", "full", "steps", "vocab", "techdefs", "steps+techdefs"],
                     help="experimental prompt variant (see vision.prompt_extra)")
     ap.add_argument("--nframes", type=int, default=4, help="keyframes per window sent to the vision model")
-    ap.add_argument("--issues", action="store_true", help="ask the vision model for visible mishaps (spills, ...)")
+    ap.add_argument("--issues", action=argparse.BooleanOptionalAction, default=True,
+                    help="ask the vision model for visible mishaps (spills, ...); on by default: recall up on recipes 8/10/12")
     ap.add_argument("--sam-url", help="self-hosted SAM service (e.g. http://localhost:8001) instead of the hosted API")
     ap.add_argument("--no-sam", action="store_true", help="skip SAM (no tracks, no cost): verdicts do not use tracks")
     ap.add_argument("--finish", action="store_true", help="at --end, call every step still undone skipped")
