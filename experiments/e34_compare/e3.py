@@ -66,12 +66,13 @@ def report():
             print(line)
     print("mean call sec %.1f, mean frame-extract sec %.1f, parse fail %d/%d" % (sum(r["sec"] for r in R)/len(R), sum(r["extract_sec"] for r in R)/len(R), sum(r["conf"] is None for r in R), len(R)))
 
-if sys.argv[1] == "report": report(); sys.exit()
-L = jobs(); print(len(L), "verdicts", flush=True)
-k = lambda r: (r["R"], r["clip"], r["kind"], r["step"], r["t"])
-ok = [r for r in map(json.loads, out.read_text().splitlines()) if r["conf"] is not None] if out.exists() else []   # resume: keep answered rows
-have = {k(r) for r in ok}; todo = [j for j in L if k(j) not in have]; print(len(todo), "to (re)run", flush=True)
-with ThreadPoolExecutor(4) as ex, out.open("w") as f:
-    for r in ok: f.write(json.dumps(r) + "\n")
-    for r in ex.map(run, todo): f.write(json.dumps(r) + "\n"); f.flush()
-print("done calls", CALLS[0])
+if __name__ == "__main__":
+    if sys.argv[1] == "report": report(); sys.exit()
+    L = jobs(); print(len(L), "verdicts", flush=True)
+    k = lambda r: (r["R"], r["clip"], r["kind"], r["step"], r["t"])
+    ok = [r for r in map(json.loads, out.read_text().splitlines()) if r["conf"] is not None] if out.exists() else []   # resume: keep answered rows
+    have = {k(r) for r in ok}; todo = [j for j in L if k(j) not in have]; print(len(todo), "to (re)run", flush=True)
+    with ThreadPoolExecutor(4) as ex, out.open("w") as f:
+        for r in ok: f.write(json.dumps(r) + "\n")
+        for r in ex.map(run, todo): f.write(json.dumps(r) + "\n"); f.flush()
+    print("done calls", CALLS[0])
