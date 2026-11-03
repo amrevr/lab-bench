@@ -9,7 +9,8 @@ SCRATCH = pathlib.Path(os.environ.get("LB_E5", "/home/agent/.claude/jobs/50da973
 CLIPS = pathlib.Path(os.environ.get("LB_CLIPS", "/Users/r/SharedContainer/lab-bench/.claude/worktrees/review-findings/data/clips"))
 FF = os.environ.get("FFMPEG", "/home/agent/.local/lib/python3.14/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-aarch64-v7.0.2")
 URL = os.environ.get("LB_URL", "http://localhost:8010/v1") + "/chat/completions"
-SESS = {"12": "/home/agent/.claude/jobs/a4f6fa6d/tmp/errclips", "8": "/home/agent/.claude/jobs/a4f6fa6d/tmp/r8_base"}
+SESS = {"12": os.environ.get("LB_SESS12", "/home/agent/.claude/jobs/a4f6fa6d/tmp/errclips"),
+        "8": os.environ.get("LB_SESS8", "/home/agent/.claude/jobs/a4f6fa6d/tmp/r8_base")}   # only the clip names are read here
 FONT = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 22)
 CALLS = [0]
 
