@@ -3,7 +3,7 @@ usage: e1.py prep R | e1.py run R COND[,COND..]   (COND = V1 V2 D; `run` calls G
 import json, os, pathlib, random, sys, time, base64, site
 sys.path.append(site.getusersitepackages())   # `python3 -I` drops user site-packages, where pydantic lives
 from concurrent.futures import ThreadPoolExecutor
-ROOT = pathlib.Path("/Users/r/SharedContainer/lab-bench/.claude/worktrees/design-leads")
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 os.environ.setdefault("FFMPEG", "/home/agent/.local/lib/python3.14/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-aarch64-v7.0.2")
 from labbench.pipeline import chunker                      # noqa: E402
@@ -11,8 +11,8 @@ from labbench.pipeline.align import Aligner, MIN_CONF      # noqa: E402
 from labbench.pipeline.vision import Vision, parse_events  # noqa: E402
 from labbench.schema import Protocol                       # noqa: E402
 
-OUT = pathlib.Path("/home/agent/.claude/jobs/50da9733/tmp/exp/e1")
-CLIPS = ROOT.parent / "review-findings/data/clips"
+OUT = pathlib.Path(os.environ.get("LB_E1", "/home/agent/.claude/jobs/50da9733/tmp/exp/e1"))
+CLIPS = pathlib.Path(os.environ.get("LB_CLIPS", str(ROOT.parent / "review-findings/data/clips")))
 N, L = 100, 3.0
 
 SYS1 = ("You watch short cooking-bench clips as keyframes. You get a list of candidate actions. For each candidate, decide "
@@ -142,8 +142,8 @@ def run(r, conds):
     p, _ = load(r)
     wins = json.loads((OUT / f"windows{r}.json").read_text())
     names = sorted({n for st in p.steps for n in (st.obj, st.target) if n})
-    vd = Vision("glimmer", base_url="http://localhost:8010/v1", names=names, steps=p.steps, issues=True)
-    vv = Vision("glimmer", base_url="http://localhost:8010/v1")
+    vd = Vision("glimmer", base_url=os.environ.get("LB_URL", "http://localhost:8010/v1"), names=names, steps=p.steps, issues=True)
+    vv = Vision("glimmer", base_url=os.environ.get("LB_URL", "http://localhost:8010/v1"))
     for cond in conds:
         res_f = OUT / f"res{r}_{cond}.json"
         done = json.loads(res_f.read_text()) if res_f.exists() else {}

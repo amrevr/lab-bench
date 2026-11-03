@@ -1,10 +1,10 @@
 """Shared helpers for E3/E4: frame tiling (ffmpeg), Glimmer chat (1 call = 1 retry-aware request), AUC."""
 import base64, json, os, pathlib, re, subprocess, threading, time, urllib.request
 FFMPEG = os.environ.get("FFMPEG", "/home/agent/.local/lib/python3.14/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-aarch64-v7.0.2")
-CLIPS = pathlib.Path("/Users/r/SharedContainer/lab-bench/.claude/worktrees/review-findings/data/clips")
+CLIPS = pathlib.Path(os.environ.get("LB_CLIPS", "/Users/r/SharedContainer/lab-bench/.claude/worktrees/review-findings/data/clips"))
 FX = pathlib.Path(__file__).resolve().parents[2] / "fixtures"
-TMP = pathlib.Path("/home/agent/.claude/jobs/50da9733/tmp/exp/e34"); (TMP / "frames").mkdir(parents=True, exist_ok=True)
-URL = "http://localhost:8010/v1/chat/completions"
+TMP = pathlib.Path(os.environ.get("LB_E34", "/home/agent/.claude/jobs/50da9733/tmp/exp/e34")); (TMP / "frames").mkdir(parents=True, exist_ok=True)
+URL = os.environ.get("LB_URL", "http://localhost:8010/v1") + "/chat/completions"
 _lock = threading.Lock(); CALLS = [0]
 
 def _run(cmd): subprocess.run(cmd, check=True, capture_output=True)

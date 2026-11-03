@@ -1,13 +1,14 @@
 """E5: whole clip at low fps (tiled timestamped grids) + written protocol -> Verdict-shaped dicts, scored without realign.
 Usage: PYTHONPATH=<pillow dir> e5.py frames|single|twopass R   (single/twopass call Glimmer: wrap in glimmer_queue.sh)
 Output: SCRATCH/<mode>_r<R>/<clip>.session.json (+ raw replies in <clip>.raw.json). Frames cached in SCRATCH/frames/<clip>/."""
+import os
 import base64, json, pathlib, re, subprocess, sys, urllib.request, concurrent.futures as cf
 from PIL import Image, ImageDraw, ImageFont
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SCRATCH = pathlib.Path("/home/agent/.claude/jobs/50da9733/tmp/exp/e5")
-CLIPS = pathlib.Path("/Users/r/SharedContainer/lab-bench/.claude/worktrees/review-findings/data/clips")
-FF = "/home/agent/.local/lib/python3.14/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-aarch64-v7.0.2"
-URL = "http://localhost:8010/v1/chat/completions"
+SCRATCH = pathlib.Path(os.environ.get("LB_E5", "/home/agent/.claude/jobs/50da9733/tmp/exp/e5"))
+CLIPS = pathlib.Path(os.environ.get("LB_CLIPS", "/Users/r/SharedContainer/lab-bench/.claude/worktrees/review-findings/data/clips"))
+FF = os.environ.get("FFMPEG", "/home/agent/.local/lib/python3.14/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-aarch64-v7.0.2")
+URL = os.environ.get("LB_URL", "http://localhost:8010/v1") + "/chat/completions"
 SESS = {"12": "/home/agent/.claude/jobs/a4f6fa6d/tmp/errclips", "8": "/home/agent/.claude/jobs/a4f6fa6d/tmp/r8_base"}
 FONT = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 22)
 CALLS = [0]
