@@ -364,3 +364,22 @@ class PairFramesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GeneralMatchingTests(unittest.TestCase):
+    def _al(self, steps):
+        from labbench.schema import Protocol
+        return Aligner(Protocol(name="t", source_clip="t", steps=steps, partial_order=True))
+
+    def test_a_step_with_its_own_target_is_not_a_container_step(self):
+        al = self._al([Step(id=1, label="lettuce", action="place", obj="lettuce", target="muffin"),
+                       Step(id=2, label="egg", action="place", obj="egg", target="lettuce", after=[1])])
+        st, _ = al._find(Event(t_start=0, t_end=1, action="place", obj="egg", target="microwave", conf=0.9))
+        self.assertNotEqual(st.id if st else None, 1)       # the egg going somewhere is not "place the lettuce"
+
+    def test_placement_verbs_are_alike_when_the_object_matches(self):
+        al = self._al([Step(id=1, label="lettuce", action="place", obj="lettuce", target="muffin")])
+        st, how = al._find(Event(t_start=0, t_end=1, action="add", obj="lettuce", target="muffin", conf=0.9))
+        self.assertEqual((st.id, how), (1, "exact"))
+        st, _ = al._find(Event(t_start=0, t_end=1, action="cut", obj="lettuce", conf=0.9))
+        self.assertIsNone(st)

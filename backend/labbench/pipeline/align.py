@@ -16,6 +16,7 @@ ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be cor
 CONTINUE_GAP = 30.0   # s: an event this soon after a step with the same form is that step continuing
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
 NO_ISSUE = {"", "none", "null", "no", "n/a", "na", "nan", "false", "clean", "nothing", "ok", "fine", "no issue"}
+PLACE_LIKE = {"place", "add", "put", "set", "lay", "top", "line", "arrange", "transfer"}   # same move, object decides
 ACTION_SYNONYMS = {"season": "sprinkle", "garnish": "sprinkle", "drizzle": "pour"}
 SPRINKLE_ACTIONS = {"sprinkle", "pour"}   # the obj of these is the ingredient; the vision model often names what it lands on
 SURFACES = {"plate", "board", "cutting board", "tray", "platter", "dish", "bowl", "table", "counter"}
@@ -151,14 +152,16 @@ class Aligner:
         return None, "none"
 
     def _act(self, s: Step, action: str) -> bool:
-        return action == s.action or action in s.aliases
+        if action == s.action or action in s.aliases:
+            return True
+        return action in PLACE_LIKE and bool({s.action, *s.aliases} & PLACE_LIKE)   # put / add / place ... alike
 
     def _obj(self, s: Step, ev: Event) -> bool:
         """The event's object is the step's, or the step acts on a container (mix the mug) and the event names the
         container as target or anything the recipe puts into it (mix the milk)."""
         if _same(s.obj, ev.obj):
             return True
-        inside = self.contents.get(_norm(s.obj))
+        inside = self.contents.get(_norm(s.obj)) if not s.target else None   # mix / heat the mug, not "place the lettuce"
         return bool(inside) and (_same(ev.target, s.obj) or any(_same(ev.obj, i) for i in inside))
 
     def _is(self, s: Step, ev: Event) -> bool:
