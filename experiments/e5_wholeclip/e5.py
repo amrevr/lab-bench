@@ -11,7 +11,8 @@ FF = os.environ.get("FFMPEG", "/home/agent/.local/lib/python3.14/site-packages/i
 URL = os.environ.get("LB_URL", "http://localhost:8010/v1") + "/chat/completions"
 SESS = {"12": os.environ.get("LB_SESS12", "/home/agent/.claude/jobs/a4f6fa6d/tmp/errclips"),
         "8": os.environ.get("LB_SESS8", "/home/agent/.claude/jobs/a4f6fa6d/tmp/r8_base")}   # only the clip names are read here
-FONT = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 22)
+try: FONT = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf", 22)
+except OSError: FONT = ImageFont.load_default(size=22)   # dsp has no freefont
 CALLS = [0]
 
 def duration(c):
