@@ -15,6 +15,33 @@ def sess(verdicts, last_t=100.0, end=120.0):
     return {"verdicts": [dict(mode="ask", **v) for v in verdicts], "events": [{"t_end": last_t}], "run": {"end": end}}
 
 
+class OrderWindowTests(unittest.TestCase):
+    def test_each_order_step_has_its_own_window(self):
+        r = rec("c", [step(84, 2.7, 10, "Order Error"), step(85, 300, 335, "Order Error")])
+        early = score_timed(sess([{"step_id": 85, "kind": "wrong_order", "t": 10}], last_t=340), r)
+        self.assertFalse([x for x in early["rows"] if x["step_id"] == 85][0]["strict"])
+        ok = score_timed(sess([{"step_id": 85, "kind": "wrong_order", "t": 310}], last_t=340), r)
+        self.assertTrue([x for x in ok["rows"] if x["step_id"] == 85][0]["strict"])
+
+
+class RealignTests(unittest.TestCase):
+    def _session(self, **run):
+        ev = {"t_start": 0, "t_end": 1, "action": "cut", "obj": "tomato", "conf": 0.9, "chunk": [0, 3]}
+        return {"events": [ev], "verdicts": [], "run": {"end": 60.0, **run}}
+
+    def _proto(self):
+        from labbench.schema import Protocol, Step
+        return Protocol(name="p", source_clip="e", steps=[Step(id=1, label="cut", action="cut", obj="tomato"),
+                                                          Step(id=2, label="mix", action="mix", obj="bowl")])
+
+    def test_unfinished_session_gets_no_end_of_clip_skips(self):
+        from labbench.eval import realign
+        self.assertEqual([v["kind"] for v in realign(self._session(finish=False), self._proto())["verdicts"]
+                          if v["kind"] == "skipped_step"], [])
+        self.assertEqual([v["step_id"] for v in realign(self._session(finish=True), self._proto())["verdicts"]
+                          if v["kind"] == "skipped_step"], [2])
+
+
 class TimedScoringTests(unittest.TestCase):
     def test_technique_needs_right_kind_and_time(self):
         r = rec("c", [step(1, 10, 20, "Technique Error")])

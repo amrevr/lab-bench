@@ -90,6 +90,8 @@ def main() -> None:
     ap.add_argument("--realign", type=pathlib.Path, help="protocol.json: re-run the aligner (current settings) on each session's events")
     a = ap.parse_args()
     if a.cc4d:
+        if not a.sessions:
+            ap.error("--cc4d needs --sessions")
         timed_main(a.cc4d, a.sessions, set(filter(None, a.held_out.split(","))), a.json, a.realign)
         return
     results = score_root(a.root, a.manifest)
@@ -119,7 +121,9 @@ def realign(session: dict, protocol: Protocol) -> dict:
     al = Aligner(protocol)
     for e in session["events"]:
         al.feed(Event.model_validate(e))
-    al.finish(float(session["run"]["end"]))
+    end = float(session["run"]["end"])
+    if session["run"].get("finish", any(v["kind"] == "skipped_step" and v["t"] == end for v in session["verdicts"])):
+        al.finish(end)    # only a session that was finished had end-of-clip skips (older ones: inferred from its verdicts)
     return {**session, "verdicts": [v.model_dump(mode="json") for v in al.verdicts]}
 
 
@@ -132,7 +136,7 @@ def timed_main(cc4d: pathlib.Path, sessions: pathlib.Path, held_out: set[str], a
         if sess.pop(proto.source_clip, None) is not None:     # the expert run the protocol learned from is not a test
             print(f"not scored: {proto.source_clip} (the protocol's expert run)")
         sess = {c: realign(s, proto) for c, s in sess.items()}
-    missing = sorted(set(recs) - set(sess))
+    missing = sorted(set(recs) - set(sess) - ({proto.source_clip} if protocol else set()))
     groups = {"tune": sorted(set(sess) - held_out), "held-out": sorted(set(sess) & held_out)}
     report = {g: {w: summarize_timed([score_timed(sess[c], recs[c], w) for c in clips if c in recs])
                   for w in (15.0, 30.0, 60.0)} for g, clips in groups.items() if clips}
@@ -172,10 +176,10 @@ def cc4d_rows(rec: dict) -> list[dict]:
              "tags": sorted({e["tag"].replace(" Error", "") for e in st["errors"]})}
             for st in rec["step_annotations"] if st.get("errors")]
     order = [r for r in rows if "Order" in r["tags"] and r["start"] >= 0]
-    if order:   # all Order-tagged steps of a recording are one swap: time it from the first misplaced step
-        span = (min(r["start"] for r in order), max(r["end"] for r in order))
-        for r in order:
-            r["order_span"] = span
+    for r in order:   # a swapped step is timed from the first later step done ahead of it (that is when it can be asked about)
+        ahead = [x["start"] for x in order if x["step_id"] > r["step_id"] and x["start"] < r["start"]]
+        if ahead:
+            r["order_start"] = min(ahead)
     return rows
 
 
@@ -190,7 +194,7 @@ def _strict(v: dict, row: dict, w: float, last_t: float) -> bool:
             if row["start"] < 0 or v["t"] >= row["start"]:
                 return True
             continue
-        a, b = row.get("order_span", (row["start"], row["end"])) if tag == "Order" else (row["start"], row["end"])
+        a, b = (row.get("order_start", row["start"]) if tag == "Order" else row["start"]), row["end"]
         if a >= 0 and a <= v["t"] <= b + w and v["t"] <= last_t:    # a step that never happened has no window
             return True
     return False
@@ -208,9 +212,9 @@ def score_timed(session: dict, rec: dict, w: float = 30.0) -> dict:
         hit = next((v for v in verdicts if _strict(v, r, w, last_t)), None)
         out_rows.append({**r, "strict": hit is not None, "lenient": any(v["step_id"] == r["step_id"] for v in verdicts),
                          "at_end": bool(hit) and hit["t"] > last_t,
-                         "delay_s": round(hit["t"] - r.get("order_span", (r["start"],))[0], 1) if hit and r["start"] >= 0 else None})
-    tp = [v for v in verdicts if any(_strict(v, r, w, last_t) for r in vis)]
+                         "delay_s": round(hit["t"] - r.get("order_start", r["start"]), 1) if hit and r["start"] >= 0 else None})
     tp_i = {i for i, v in enumerate(verdicts) if any(_strict(v, r, w, last_t) for r in vis)}
+    tp = [v for i, v in enumerate(verdicts) if i in tp_i]
     fa = [v for i, v in enumerate(verdicts) if i not in tp_i and v["step_id"] not in hidden]   # neither, on a not-visible error step
     steps = {st["step_id"]: st for st in rec["step_annotations"]}
     flagged = {v["step_id"] for v in verdicts}

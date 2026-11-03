@@ -109,7 +109,8 @@ def main() -> None:
         except Exception as x:
             return [], failed + [f"{type(x).__name__}: {x}"[:200]], round(time.time() - t1, 2)
         finally:
-            sam_done[0] += 1
+            with sam_lock:
+                sam_done[0] += 1
 
     def work_on(i: int, s: float, e: float):
         """-> (events, health, SAM future or None); health = {"vision": error or None, "t": stage seconds}."""
@@ -133,6 +134,7 @@ def main() -> None:
             done[0] += 1
 
     done, events, prev, errors, aborted, timings = [0], [], [], [], False, []
+    sam_lock = threading.Lock()
     sam_done = [0] if not a.no_sam else done          # windows whose SAM call has finished (NullSam: none are made)
     sam_pool = ThreadPoolExecutor(a.sam_workers)
     pending: list = []          # (s, e, events of the window as (Event, session dict), SAM future), window order
@@ -219,7 +221,7 @@ def main() -> None:
     session["verdicts"] = [v.model_dump(mode="json") for v in al.verdicts]
     session["run"] = {"backend": a.backend, "pace": a.pace, "start": a.start, "end": a.end, "fps": a.fps,
                       "height": a.height, "billed_frames": sam.frames, "cost_usd": round(sam.frames * FRAME_COST, 3),
-                      "errors": errors, "aborted": aborted, "no_sam": a.no_sam, "protocol_prompt": a.protocol_prompt, "issues": a.issues, "nframes": a.nframes, "pair": a.pair, "timings": timings,
+                      "errors": errors, "aborted": aborted, "finish": a.finish and not aborted, "no_sam": a.no_sam, "protocol_prompt": a.protocol_prompt, "issues": a.issues, "nframes": a.nframes, "pair": a.pair, "timings": timings,
                       "sam_s": {"p50": pct(sam_s, .5), "p90": pct(sam_s, .9)} if sam_s else None, **stats}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(session, indent=1))
