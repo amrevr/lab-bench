@@ -10,14 +10,16 @@ from e2_tracker import Tracker
 
 HELD12 = {"12_48", "12_51", "12_9", "12_13", "12_16"}
 J = pathlib.Path("/home/agent/.claude/jobs")
-ORA = J / "50da9733/tmp/exp/oracle"; REAL = J / "a4f6fa6d/tmp"
+ORA = J / "50da9733/tmp/exp/oracle2"; REAL = J / "a4f6fa6d/tmp"
 
 
 def run(cls, proto, sess, **kw):
     al = cls(proto, **kw)
     for e in sess["events"]:
         al.feed(Event.model_validate(e))
-    al.finish(float(sess["run"]["end"]))
+    end = float(sess["run"]["end"])
+    if sess["run"].get("finish", any(v["kind"] == "skipped_step" and v["t"] == end for v in sess["verdicts"])):   # same gate as PR #27 realign
+        al.finish(end)
     return {**sess, "verdicts": [v.model_dump(mode="json") for v in al.verdicts]}
 
 
