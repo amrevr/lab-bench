@@ -19,7 +19,7 @@ class ReplayTests(unittest.TestCase):
     def run_replay(self, *extra, vision=fake_events, track=None):
         out = pathlib.Path(tempfile.mkdtemp()) / "s.json"
         argv = ["replay", "--clip", "/x/12_26.mp4", "--protocol", str(PROTOCOL), "--backend", "spark", "--start", "0",
-                "--end", "8", "--pace", "fast", "--out", str(out), "--workdir", str(out.parent), *extra]
+                "--end", "8", "--pace", "fast", "--sam", "--out", str(out), "--workdir", str(out.parent), *extra]   # these test the hosted-SAM path
         with mock.patch("sys.argv", argv), mock.patch.dict(os.environ, {"META_API_KEY": ""}), \
                 mock.patch.object(replay.chunker, "cut_chunk"), mock.patch.object(replay.chunker, "keyframes", return_value=[]), \
                 mock.patch.object(replay.MetaSam, "track", track or (lambda self, c, p, t0, errors=None: setattr(self, "frames", self.frames + 150) or [])), \

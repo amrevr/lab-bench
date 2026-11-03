@@ -9,15 +9,15 @@ near-live, not real time. When unsure it asks ("Quick check") instead of alarmin
 
 ```
 novice clip -> chunker (3 s windows, 0.5 s overlap, H.264 + 4 keyframes, chunks processed concurrently)
-  -> SAM 3.1 (hosted, Meta Model API; self-hosted SAM not built)  hand, tomato, plate (one request each, in parallel),
-     stitched across chunks by IoU at the same timestamp in the overlap
-  -> vision model  tracks + keyframes -> timestamped events + conf; VISION_BACKEND=glimmer (default,
+  -> (optional, off by default: --sam / --sam-url) SAM 3.1 tracks hand, tomato, plate; tracks are only attached to
+     events afterwards and no verdict uses them (measured: no accuracy effect, large latency and GPU cost)
+  -> vision model  keyframes -> timestamped events + conf; VISION_BACKEND=glimmer (default,
      self-hosted on the H100s, localhost:8000; the replay CLI defaults to spark) or spark (Muse Spark Open on Baseten)
   -> step alignment (deterministic) + Muse Wonder  deviation verdicts, coaching text, ask-vs-flag
   -> overlay  video + protocol checklist + flags + source-frame refs
 ```
 
-Wonder never sees raw video. Fallback if Glimmer is weak: SAM tracks plus motion/position rules.
+Wonder never sees raw video.
 Not used on purpose: Muse Image.
 
 ## Layout

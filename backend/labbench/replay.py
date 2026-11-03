@@ -78,11 +78,13 @@ def main() -> None:
                     help="ask the vision model for visible mishaps (spills, ...); on by default: recall up on recipes 8/10/12")
     ap.add_argument("--sam-workers", type=int, default=SAM_WORKERS, help="SAM chunks in flight (match the service's workers)")
     ap.add_argument("--sam-url", help="self-hosted SAM service (e.g. http://localhost:8001) instead of the hosted API")
-    ap.add_argument("--no-sam", action="store_true", help="skip SAM (no tracks, no cost): verdicts do not use tracks")
+    ap.add_argument("--sam", action="store_true", help="hosted SAM tracks (billed per frame); off by default: no verdict uses tracks")
+    ap.add_argument("--no-sam", action="store_true", help="(default) no SAM; kept so older commands still work")
     ap.add_argument("--finish", action="store_true", help="at --end, call every step still undone skipped")
     ap.add_argument("--workdir", type=pathlib.Path, help="chunks and keyframes (default: a temp dir)")
     ap.add_argument("--out", type=pathlib.Path, required=True)
     a = ap.parse_args()
+    a.no_sam = not (a.sam or a.sam_url)          # SAM only when asked for: its tracks never change a verdict
     if a.pair and a.nframes % 2:
         sys.exit("--pair needs an even --nframes")
 
