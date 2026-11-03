@@ -132,6 +132,12 @@ def run_d(v, p, w, kf):
     return {"det": sorted(det), "events": [e.model_dump(include={"action", "obj", "target", "technique", "conf"}) for e in evs], "sec": sec}
 
 
+import urllib.request as _ur
+_open = _ur.urlopen
+def _slow_open(req, *a, timeout=None, **k): return _open(req, *a, timeout=300, **k)   # shared GPU: pipeline's 60 s client timeout is too short
+_ur.urlopen = _slow_open
+
+
 def run(r, conds):
     p, _ = load(r)
     wins = json.loads((OUT / f"windows{r}.json").read_text())
@@ -142,7 +148,7 @@ def run(r, conds):
         res_f = OUT / f"res{r}_{cond}.json"
         done = json.loads(res_f.read_text()) if res_f.exists() else {}
         def one(w):
-            if str(w["i"]) in done:
+            if str(w["i"]) in done and "err" not in done[str(w["i"])]:   # failed windows are retried
                 return
             kf = frames(r, w)
             done[str(w["i"])] = run_d(vd, p, w, kf) if cond == "D" else run_v(vv, cond, p, w, kf)
