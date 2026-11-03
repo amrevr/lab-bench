@@ -18,6 +18,6 @@ for r in json.loads((fx / "cc4d_error_annotations.json").read_text()):
     for _ in range(a.fp):
         t = rng.uniform(0, end - 10); evs.append(ev(steps[rng.choice(list(steps))], t, t + 3))
     evs.sort(key=lambda e: e["t_start"])
-    sess = {"clip": r["recording_id"], "protocol": proto.get("name"), "events": evs, "verdicts": [], "run": {"end": end}}
+    sess = {"clip": r["recording_id"], "protocol": proto.get("name"), "events": evs, "verdicts": [], "run": {"end": end, "finish": True}}
     (a.out / f'{r["recording_id"]}.session.json').write_text(json.dumps(sess))
 print(f"wrote {len(list(a.out.glob('*.session.json')))} sessions to {a.out}")
