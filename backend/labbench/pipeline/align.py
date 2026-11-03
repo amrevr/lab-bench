@@ -30,8 +30,17 @@ def _norm(x: str) -> str:
     return SYNONYMS.get(x, x)
 
 
+def _singular(w: str) -> str:
+    """shortcut: -ies is left alone (cookies ~ cookie, berries ~ berry cannot both hold); -oes and sibilant -es are handled."""
+    if len(w) <= 3 or w.endswith("ss"):
+        return w
+    if w.endswith(("oes", "ches", "shes", "xes", "sses")):
+        return w[:-2]
+    return w[:-1] if w.endswith("s") else w
+
+
 def _words(x: str) -> set[str]:
-    return {w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w for w in _norm(x).split()}
+    return {_singular(w) for w in _norm(x).split()}
 
 
 def _same(a: str | None, b: str | None) -> bool:
@@ -63,7 +72,7 @@ class Aligner:
         self.steps = protocol.steps
         self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n} | {
             _norm(v["target"]) for s in self.steps for v in s.seen_as if v.get("target")}   # the microwave of 'place -> microwave'
-        self.ingredients = {(s.action, _norm(s.obj)) for s in self.steps}
+        self.ingredients = {(a, _norm(s.obj)) for s in self.steps for a in (s.action, *s.aliases)}
         self.pos = {s.id: i for i, s in enumerate(protocol.steps)}   # step ids need not be sorted
         self.partial = protocol.partial_order
         self.contents: dict[str, set[str]] = {}    # container -> what steps put into it (a step "on" a container
@@ -94,10 +103,11 @@ class Aligner:
             ev.obj, ev.target = "", ev.target or o
         return ev
 
-    def _corroborated(self, ev: Event, same_technique: bool = False) -> bool:
-        """The same action/object (compatible target; same technique if asked) was seen in another window within CORROBORATE_GAP."""
+    def _corroborated(self, ev: Event, same_technique: bool = False, same_issue: bool = False) -> bool:
+        """The same action/object (compatible target; same technique or issue if asked) was seen in another window within CORROBORATE_GAP."""
         return any(o is not ev and _win(o) != _win(ev) and o.action == ev.action and _same(o.obj, ev.obj)
                    and (not same_technique or _same(o.technique, ev.technique))
+                   and (not same_issue or _same(o.issue, ev.issue))
                    and (o.target is None or ev.target is None or _same(o.target, ev.target))
                    and max(o.t_start - ev.t_end, ev.t_start - o.t_end) <= CORROBORATE_GAP for o in self.seen)
 
@@ -168,8 +178,11 @@ class Aligner:
         sd, ss = self.steps[self.pos[d]], self.steps[self.pos[s]]
         return self.pos[d] > self.pos[s] and not (ss.group and ss.group == sd.group)
 
-    def _backed(self, kind: VerdictKind, ev: Event) -> bool:
-        """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict) in another window."""
+    def _backed(self, kind: VerdictKind, ev: Event, source: str | None = None) -> bool:
+        """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict, same
+        issue for a mishap) in another window."""
+        if source == "issue":
+            return ev.conf >= STRONG or self._corroborated(ev, same_issue=True)
         return ev.conf >= STRONG or self._corroborated(ev, kind == VerdictKind.WRONG_TECHNIQUE)
 
     def _emit(self, t: float, kind: VerdictKind, sid: int, msg: tuple[str, str], contrib: list[tuple[int, Event]],
@@ -181,7 +194,7 @@ class Aligner:
         key = (kind, sid, source)          # a mishap and a technique word on one step are separate findings
         if key in self._reported:
             return None
-        if gated and not all(self._backed(kind, e) for _, e in contrib):
+        if gated and not all(self._backed(kind, e, source) for _, e in contrib):
             self.parked[key] = (kind, sid, msg, contrib, conf, source)
             return None
         conf = min(e.conf for _, e in contrib) if conf is None else conf
@@ -202,7 +215,7 @@ class Aligner:
         for key, (kind, sid, msg, contrib, conf, source) in list(self.parked.items()):
             if kind == VerdictKind.SKIPPED and sid in self.done:
                 del self.parked[key]
-            elif all(self._backed(kind, e) for _, e in contrib):
+            elif all(self._backed(kind, e, source) for _, e in contrib):
                 del self.parked[key]
                 out.append(self._emit(t, kind, sid, msg, contrib, conf, gated=False, source=source))
         return [v for v in out if v]
@@ -220,7 +233,8 @@ class Aligner:
         cands = [s for s in self.steps if self._is(s, ev)]
         undone = [c for c in cands if c.id not in self.done]
         done = sorted((c for c in cands if c.id in self.done), key=lambda c: self.done[c.id][1].t_end)
-        s = undone[0] if undone else (done[-1] if done else None)    # the step under way, else the one done last
+        ready = [c for c in undone if all(a in self.done for a in c.after)]
+        s = ready[0] if ready else (done[-1] if done else (undone[0] if undone else None))   # the step under way, else the one done last
         if s is None:
             return []
         v = self._emit(ev.t_end, VerdictKind.WRONG_TECHNIQUE, s.id,
@@ -231,9 +245,10 @@ class Aligner:
     def _feed(self, ev: Event) -> list[Verdict]:
         cur = (self._n, ev)
         self._n += 1
-        return self._issue(ev, cur) + self._feed_step(ev, cur)
+        spoke = self._issue(ev, cur)
+        return spoke + self._feed_step(ev, cur, bool(spoke))
 
-    def _feed_step(self, ev: Event, cur) -> list[Verdict]:
+    def _feed_step(self, ev: Event, cur, spoke: bool = False) -> list[Verdict]:   # spoke: a mishap was just flagged
         step, how = self._find(ev)
         if step is None or not self._consistent(step, ev):
             return []
@@ -275,7 +290,7 @@ class Aligner:
                     if len(after) >= self.SKIP_AFTER:
                         out.append(self._emit(t, VerdictKind.SKIPPED, m.id,
                             (f"Step {m.id} ('{m.label}') looks skipped.", f"Did you do '{m.label}' (step {m.id})?"), after))
-            if how == "exact" and fresh and ready and not any(out):
+            if how == "exact" and fresh and ready and not spoke and not any(out):
                 out.append(self._emit(t, VerdictKind.ON_TRACK, step.id, (f"Step {step.id} ('{step.label}') done.",) * 2, [cur]))
         return [v for v in out if v]
 

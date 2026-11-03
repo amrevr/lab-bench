@@ -244,9 +244,6 @@ class KeyframesClipEndTests(unittest.TestCase):
         self.assertEqual([round(t, 2) for t, _ in kf], [9.19, 9.56, 9.94])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class IssueTests(unittest.TestCase):
     def test_visible_mishap_is_a_technique_flag_on_that_step_even_when_already_done(self):
@@ -295,3 +292,65 @@ class VisibilityTests(unittest.TestCase):
         self.assertEqual(sorted(((v.kind.value, v.source or "") for v in al.verdicts if v.mode != "ok")),
                          [("wrong_technique", ""), ("wrong_technique", "issue")])
         self.assertEqual(Aligner(p).feed(mk(0, "slice", "n/a")), Aligner(p).feed(mk(0, "slice")))
+
+
+def _ev(t, action, obj, target=None, conf=0.9, **kw):
+    return Event(t_start=t, t_end=t + 1, action=action, obj=obj, target=target, conf=conf, chunk=[t, t + 3], **kw)
+
+
+def _kinds(al):
+    return [(v.kind.value, v.step_id, v.source) for v in al.verdicts if v.mode != "ok"]
+
+
+class ReviewFixTests(unittest.TestCase):
+    def test_alias_verb_is_not_mistaken_for_a_surface_pour(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=88, label="fill milk", action="fill", aliases=["add", "pour"],
+                                                            obj="skimmed milk", target="mug")])
+        al = Aligner(p)
+        self.assertEqual([v.kind.value for v in al.feed(_ev(0, "pour", "milk", "mug"))], ["on_track"])
+        self.assertIn(88, al.done)
+
+    def test_weak_mishap_without_technique_is_confirmed_by_the_same_mishap_again(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        al.feed(_ev(0, "fill", "milk", "mug", 0.55, issue="spill"))
+        al.feed(_ev(1.5, "fill", "milk", "mug", 0.55, issue="spill"))
+        self.assertIn(("wrong_technique", 1, "issue"), _kinds(al))
+
+    def test_weak_mishap_is_not_confirmed_by_a_clean_neighbour(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="cut", action="cut", obj="tomato", technique="slice")])
+        al = Aligner(p)
+        al.feed(_ev(0, "cut", "tomato", None, 0.55, technique="slice", issue="spill"))
+        al.feed(_ev(1.5, "cut", "tomato", None, 0.9, technique="slice"))
+        self.assertNotIn("issue", [k[2] for k in _kinds(al)])
+
+    def test_mishap_goes_to_the_step_under_way_not_an_unready_one(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", partial_order=True, steps=[
+            Step(id=83, label="fill late", action="fill", obj="milk", target="mug", after=[85]),
+            Step(id=85, label="stir", action="stir", obj="mug"),
+            Step(id=88, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        al.feed(_ev(0, "fill", "milk", "mug"))
+        self.assertIn(88, al.done)
+        al.feed(_ev(10, "fill", "milk", "mug", issue="spill"))
+        self.assertEqual([k[:2] for k in _kinds(al) if k[2] == "issue"], [("wrong_technique", 88)])
+
+    def test_mishap_event_does_not_also_say_step_done(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        self.assertEqual([v.kind.value for v in al.feed(_ev(0, "fill", "milk", "mug", issue="spill"))], ["wrong_technique"])
+
+    def test_plural_names_match_their_singular(self):
+        from labbench.pipeline.align import _same
+        self.assertTrue(_same("tomatoes", "tomato"))
+        self.assertTrue(_same("sandwiches", "sandwich"))
+        self.assertTrue(_same("glasses", "glass"))
+
+
+if __name__ == "__main__":
+    unittest.main()
