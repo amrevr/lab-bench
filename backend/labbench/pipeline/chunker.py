@@ -64,10 +64,14 @@ def keyframes(src: pathlib.Path, start: float, end: float, out_dir: pathlib.Path
 
 def pair_frames(frames: list[tuple[float, pathlib.Path]]) -> list[tuple[float, pathlib.Path]]:
     """Consecutive keyframes side by side, two per image: twice the frames within the server's image limit.
-    Each pair keeps the left frame's timestamp."""
+    Each pair keeps the left frame's timestamp; an odd last frame (the window ran past the clip end) goes alone."""
     out = []
-    for (t, a), (_, b) in zip(frames[0::2], frames[1::2]):
+    for i in range(0, len(frames), 2):
+        t, a = frames[i]
+        if i + 1 == len(frames):
+            out.append((t, a))
+            break
         dst = a.with_name(a.stem + "_pair.jpg")
-        _run([FFMPEG, "-y", "-i", str(a), "-i", str(b), "-filter_complex", "hstack", "-q:v", "4", str(dst)])
+        _run([FFMPEG, "-y", "-i", str(a), "-i", str(frames[i + 1][1]), "-filter_complex", "hstack", "-q:v", "4", str(dst)])
         out.append((t, dst))
     return out

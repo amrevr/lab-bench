@@ -352,5 +352,15 @@ class ReviewFixTests(unittest.TestCase):
         self.assertTrue(_same("glasses", "glass"))
 
 
+class PairFramesTests(unittest.TestCase):
+    def test_odd_frame_count_keeps_the_last_frame(self):
+        from unittest import mock
+        from labbench.pipeline import chunker
+        fr = lambda n: [(float(i), pathlib.Path(f"f{i}.jpg")) for i in range(n)]
+        with mock.patch.object(chunker, "_run", lambda cmd: None):
+            self.assertEqual([t for t, _ in chunker.pair_frames(fr(3))], [0.0, 2.0])
+            self.assertEqual(chunker.pair_frames(fr(1)), fr(1))
+
+
 if __name__ == "__main__":
     unittest.main()
