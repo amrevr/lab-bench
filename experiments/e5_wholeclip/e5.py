@@ -115,7 +115,7 @@ def run_single(R, c, P, ptxt):
     dur = duration(c)
     ans, raw = ask(single_prompt(R, ptxt, dur, grids(c, 0, dur, 4, 4, 288, 162)), 9000)
     (out / f"{c}.raw.json").write_text(json.dumps(raw))
-    (out / f"{c}.session.json").write_text(json.dumps(to_session(c, R, P, dur, ans)))
+    if ans: (out / f"{c}.session.json").write_text(json.dumps(to_session(c, R, P, dur, ans)))   # a failed clip is retried next run
     print(c, "ok" if ans else "FAILED", raw.get("usage"), raw.get("finish"), flush=True)
 
 P1 = ("You watch part of a cooking video ({a:.0f}-{b:.0f}s of {dur:.0f}s), given as {n} images, each a grid of timestamped thumbnails (row by row, left to right, time increasing; "
@@ -139,7 +139,7 @@ def run_two(R, c, P, ptxt):
     tl = "\n".join(f"{e.get('t_start')}-{e.get('t_end')}s step {e.get('step_id')}: {e.get('what')}" for a, _ in res if a for e in a.get("events", []) if isinstance(e, dict))
     ans, raw = ask([{"type": "text", "text": P2.format(dur=dur, ptxt=ptxt, kinds=KINDS, out=OUT, tl=tl or "(nothing)")}], 8000)
     (out / f"{c}.raw.json").write_text(json.dumps({"pass1": [r for _, r in res], "tl": tl, "pass2": raw}))
-    (out / f"{c}.session.json").write_text(json.dumps(to_session(c, R, P, dur, ans)))
+    if ans: (out / f"{c}.session.json").write_text(json.dumps(to_session(c, R, P, dur, ans)))
     print(c, "ok" if ans else "FAILED", [bool(a) for a, _ in res], raw.get("usage"), flush=True)
 
 if __name__ == "__main__":
