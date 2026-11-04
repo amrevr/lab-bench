@@ -71,7 +71,7 @@ Key frames for the evidence thumbnails are written under the replay `--workdir` 
 - `META_API_KEY` (SAM, Wonder) and `BASETEN_API_KEY` (Spark) available to the process; in the sandbox they are
   injected by the proxy. Never show them on screen.
 - Do a 20 s trial: `--start 120 --end 140 --max-spend 0.5`. Check the output has no "failed" lines.
-- Backend `glimmer` only: forward `ssh -N -L 8000:127.0.0.1:18080 dsp-tunnel`, check the server is up
+- Backend `glimmer` only: forward `ssh -N -L 8000:127.0.0.1:18080 <gpu-host>`, check the server is up
   (docs/RUNNING.md). Glimmer ran slower than Spark in the pipeline (p50 15.8 s on 12_17), so use `spark` for the
   main recording unless the Glimmer story is wanted; say plainly which backend ran.
 - Clean terminal font size, overlay wide enough to read the checklist, caption on.
