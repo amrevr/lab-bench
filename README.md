@@ -124,7 +124,7 @@ dataset's error annotations are used only to score, never as pipeline input.
 | `fixtures/recipe*/` | protocols and error annotations for recipes 1, 3, 8, 10, 12, 27 |
 | `overlay/index.html` | coaching overlay (static page reading a session JSON) |
 | `cluster/` | `40_serve_glimmer_h100.sh`: the measured vLLM command for Glimmer on 2x H100 |
-| `docs/` | `SETUP.md` (organizer guide), `RUNNING.md` (details), `measurements.md`, `SUBMISSION.md`, `DEMO.md` |
+| `docs/` | `SETUP.md` (organizer guide), `RUNNING.md` (details), `measurements.md`, `DEMO.md` |
 | `.claude/skills/lab-bench/`, `AGENTS.md` | agent skill: set up, test and demo the repo through any coding agent |
 
 ## License
