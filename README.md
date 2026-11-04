@@ -126,3 +126,7 @@ dataset's error annotations are used only to score, never as pipeline input.
 | `cluster/` | Glimmer serving scripts and benchmarks for the H100 machine |
 | `docs/` | `SETUP.md` (organizer guide), `RUNNING.md` (details), `measurements.md`, `SUBMISSION.md`, `DEMO.md` |
 | `.claude/skills/lab-bench/`, `AGENTS.md` | agent skill: set up, test and demo the repo through any coding agent |
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE). CaptainCook4D clips and annotations are also Apache-2.0.
