@@ -89,6 +89,20 @@ about 1.9 false alarms per recording (recipe 3: about 4.6), but still a mid-clip
 Mishap flags were 4 right, 1 wrong (recipe 3 before ISSUE_STRONG: 4 right, 26 wrong). Different recipes, one run
 each: this is consistent with the precision rules generalizing, not proof.
 
+Backend comparison on the same clean recipe (27, all 15 recordings, current aligner and scorer, each backend's
+visibility calibrated from its own expert run; one run each):
+
+| Backend | Strict (in time) | Lenient | False alarms mid / end | Error recordings caught | Mishap flags right / wrong | Failed windows |
+|---|---|---|---|---|---|---|
+| Glimmer 30B, self-hosted | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 4 / 1 | 0 of 4619 |
+| Spark Open, hosted (Baseten) | 15/45 (15) | 24/45 | 39 / 6 | 8/9 | 7 / 4 | 29 of 4619 |
+
+Spark sees more of recipe 27 (calibration hides 0 of 12 steps vs 3 for Glimmer), catches more errors and catches
+them on time (15 of 15 strict catches within the step, vs 9 of 12), and it is the backend that keeps up end to end in
+real time (above). The cost is about twice the mid-clip false alarms. Strict differences are within run-to-run
+noise; lenient (+8) and false alarms (+19) are larger than the noise seen on recipe 8. Neither backend dominates:
+Glimmer for precision, Spark for recall and real time.
+
 Before/after on the same clean set: recipe 27's saved Glimmer events (15 sessions, expert excluded, same calibrated
 protocol, same scorer), replayed through three versions of the aligner:
 
