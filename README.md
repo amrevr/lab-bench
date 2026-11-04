@@ -1,5 +1,7 @@
 # Lab Bench Copilot
 
+[![tests](https://github.com/amrevr/lab-bench/actions/workflows/tests.yml/badge.svg)](https://github.com/amrevr/lab-bench/actions/workflows/tests.yml)
+
 Watches someone carry out a hands-on procedure and speaks up when a step goes wrong. It learns the procedure from
 its written steps and one expert recording, then watches the novice's video in 3-second windows, ticks steps off,
 asks a quick question when unsure ("Did you add the salt?"), and flags skipped steps, wrong order, wrong
@@ -116,7 +118,7 @@ dataset's error annotations are used only to score, never as pipeline input.
 | `backend/labbench/pipeline/` | `chunker`, `vision` (Glimmer/Spark client), `align` (step tracker and verdicts), `wonder`, `sam` |
 | `backend/labbench/replay.py` | run a clip through the pipeline at real-time or fast pace, write a session |
 | `backend/labbench/eval.py` | timed scorer against CaptainCook4D annotations |
-| `scripts/` | protocol generation, visibility calibration, overlay server, `check.sh` (offline checks) |
+| `scripts/` | protocol generation, visibility calibration, overlay server, `check.sh` (offline checks, also run by CI) |
 | `fixtures/recipe*/` | protocols and error annotations for recipes 1, 3, 8, 10, 12, 27 |
 | `overlay/index.html` | coaching overlay (static page reading a session JSON) |
 | `cluster/` | Glimmer serving scripts and benchmarks for the H100 machine |

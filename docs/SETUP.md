@@ -25,7 +25,8 @@ scripts/check.sh
 
 `scripts/check.sh` runs the unit tests, a synthetic end-to-end eval (four clips with one injected error each plus
 one clean clip; the expected result is `caught 4/4, false alarms 0`) and parses every fixture. It makes no network
-calls and needs no keys. It ends with `ALL OFFLINE CHECKS PASSED` and exits non-zero on any failure.
+calls and needs no keys. It ends with `ALL OFFLINE CHECKS PASSED` and exits non-zero on any failure. GitHub Actions runs the
+same script on every push.
 
 ## 2. A stored real session
 
