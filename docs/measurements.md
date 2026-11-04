@@ -82,6 +82,20 @@ about 1.9 false alarms per recording (recipe 3: about 4.6), but still a mid-clip
 Mishap flags were 4 right, 1 wrong (recipe 3 before ISSUE_STRONG: 4 right, 26 wrong). Different recipes, one run
 each: this is consistent with the precision rules generalizing, not proof.
 
+Before/after on the same clean set: recipe 27's saved Glimmer events (15 sessions, expert excluded, same calibrated
+protocol, same scorer), replayed through three versions of the aligner:
+
+| Aligner | Strict (in time) | Lenient | False alarms mid / end | Error recordings caught | Mishap flags right / wrong |
+|---|---|---|---|---|---|
+| `main` before this work (75b4208) | 10/45 (5) | 33/45 | 32 / 58 | 7/9 | 0 / 0 |
+| PR #27 before the last two rules (e7e83b3) | 12/45 (9) | 17/45 | 28 / 6 | 8/9 | 4 / 8 |
+| current | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 4 / 1 |
+
+On identical perception, false alarms fall from 90 to 26 (71%) with more strict and on-time catches; the old
+aligner's high lenient count comes from warning on most steps of every recording. This isolates the aligner: the
+events already include this work's prompt changes (`--issues`, protocol-derived actions), so it understates the
+total change, and the old aligner never saw generated protocols in practice.
+
 Recipe 3's clean result, as run before these two changes (afde3bd): strict 13/43 (11), lenient 28/43, false alarms
 56 / 17, error clips 6/7, every normal clip with a mid-clip alarm, EDA 102/157. Recipe 3 is the clean out-of-sample result (recipe 1 informed the aligner fix 030118f): it finds mistakes about
 as well as the development recipes (strict 30%, lenient 65%, 6 of 7 error clips) but raises about 6 false alarms per
