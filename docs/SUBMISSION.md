@@ -1,8 +1,8 @@
-# Lab Bench Copilot: submission write-up (draft)
+# Lab Bench Copilot: submission write-up
 
-Status: DRAFT for the Meta Global AI Developer Hackathon, Indie track. Every number below comes from the
-repo or from issues #7, #10, #14 (measured by us, one run each, small samples). Items marked **[open]** are not
-decided or not confirmed. Nothing here claims more than was measured; see "Limitations and honesty".
+Final write-up for the Meta Global AI Developer Hackathon, Indie track. Every number below comes from the
+repo or from issues #7, #10, #14 (measured by us, one run each, small samples). Nothing here claims more than
+was measured; see "Limitations and honesty".
 
 ## Problem and idea
 
@@ -138,6 +138,6 @@ Open items, **not** in the official rules text: demo video length and format, wh
 whether a write-up or deck is required, and the "only work done during the event" rule (secondary sources
 only).
 
-## Team **[open]**
+## Team
 
-Names of all members to be filled in by the user.
+*Your Unified Recording Interpreter*

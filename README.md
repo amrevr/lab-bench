@@ -8,7 +8,7 @@ asks a quick question when unsure ("Did you add the salt?"), and flags skipped s
 ingredients and visible mishaps such as spills. Cooking stands in for lab work: everything is evaluated on
 CaptainCook4D recipes against the dataset's own timed error annotations.
 
-Built for the Meta Global AI Developer Hackathon, Indie track, by team *Your Unified Interpreter Recorder*.
+Built for the Meta Global AI Developer Hackathon, Indie track, by team *Your Unified Recording Interpreter*.
 
 **Organizers and judges:** [docs/SETUP.md](docs/SETUP.md) goes from a 5-second offline check to a self-hosted run.
 Or ask your coding agent (Claude Code, Codex, ...) to *"run the lab-bench tests"*: it picks up
