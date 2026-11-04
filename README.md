@@ -58,7 +58,7 @@ becomes a question or is dropped. Mishap flags need confidence >= 0.8 or a repea
 
 Spark gives more and earlier catches and is the live option; Glimmer gives fewer false alarms and keeps video
 local. The drafter halved Glimmer's per-call latency (3.6 s -> 1.8 s median at real-time pace). One run per
-backend; details in `docs/measurements.md`.
+backend.
 
 **Accuracy** against CaptainCook4D's timed error annotations. Strict = right step and compatible verdict, during
 the step or within 30 s; lenient = any warning on that step. The expert recording is never scored.
@@ -78,8 +78,8 @@ and mishaps. It does not reliably catch technique, quantity or temperature error
 steps). Precision on unseen recipes is the main weakness: about 2-5 false alarms per recording (recipe 27: 1.9; recipe 3: 4.6). Accuracy depends
 strongly on how visible a recipe's steps are to the vision model. Repeat runs vary by about 4 strict catches.
 Recipes 1, 3 and 27 were scored with protocols calibrated per backend from the expert run
-(`scripts/calibrate_visibility.py`); the committed fixtures are the pre-calibration versions. Full table, method,
-calibration command and caveats: [docs/measurements.md](docs/measurements.md).
+(`scripts/calibrate_visibility.py`); the committed fixtures are the pre-calibration versions; the calibration command is in
+[docs/SETUP.md](docs/SETUP.md).
 
 **Tried, measured, dropped:** SAM tracks in the loop (no verdict changed, real-time headroom lost), V-JEPA 2
 features (error AUC ~0.55; a cross-recipe action probe below the majority baseline), a Glimmer "second look"
@@ -124,7 +124,7 @@ dataset's error annotations are used only to score, never as pipeline input.
 | `fixtures/recipe*/` | protocols and error annotations for recipes 1, 3, 8, 10, 12, 27 |
 | `overlay/index.html` | coaching overlay (static page reading a session JSON) |
 | `cluster/` | `40_serve_glimmer_h100.sh`: the measured vLLM command for Glimmer on 2x H100 |
-| `docs/` | `SETUP.md` (organizer guide), `RUNNING.md` (details), `measurements.md` |
+| `docs/` | `SETUP.md` (organizer guide), `RUNNING.md` (details) |
 | `.claude/skills/lab-bench/`, `AGENTS.md` | agent skill: set up, test and demo the repo through any coding agent |
 
 ## License
