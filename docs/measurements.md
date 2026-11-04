@@ -29,6 +29,23 @@ Glimmer notes (2026-10-31, 12_119 keyframes, no SAM, events fed to the aligner):
   on clean 12_119 is unchanged (55-61 event windows, 3 steps on track, 3-4 false asks in every run). The drafter
   needs `--gpu-memory-utilization 0.44` (about 32 GB per GPU instead of 26).
 
+## End-to-end real-time run with the current defaults (2026-11-04)
+
+`replay --pace realtime` (live 60 s vision timeout, 4 keyframes, `--issues`, no SAM, Glimmer with the drafter),
+run on dsp with no other job of ours on the Glimmer server, on 12_41 (470 s) and 8_31:
+
+| Clip | Glimmer call p50 / p90 | Window close -> events reach the aligner, p50 / p90 / max | Failed windows |
+|---|---|---|---|
+| 12_41 | 15.7 / 29.8 s | 120 / 205 / 230 s | 0 of 189 |
+| 8_31 | 14.8 / 31.6 s | 89 / 132 / 150 s | 0 of 107 |
+
+Not real time on this run: the H100s were at 100% utilization from another user's jobs (about 32 GB and 9 GB,
+started during the run), and each Glimmer call took ~8x its idle-GPU time (1.8 s p50 at real-time pace, table
+above), so windows queued and verdicts fell 1.5-4 minutes behind. With GPUs to ourselves the measured per-call
+latency (1.8 s p50, 4.1 s p90) is below the 2.5 s window stride, which is what real time needs; that end-to-end
+claim was not re-measured on an idle machine. Real time therefore needs dedicated GPUs (or the hosted backend),
+not a shared machine.
+
 ## Accuracy and generalization (2026-11-01/03)
 
 Scored with `python -m labbench.eval --cc4d ... --realign <protocol>` against CaptainCook4D's own error annotations
