@@ -55,6 +55,7 @@ the step or within 30 s; lenient = any warning on that step. The expert recordin
 | 10 pinwheels | development | 19/91 / 32/91 | 7/8 | 3/3 |
 | 1 egg sandwich | first clean test, later informed a fix | 18/77 / 40/77 | 11/13 | 2/4 |
 | 3 mug pizza | clean test | 9/43 / 21/43 | 5/7 | 5/5 |
+| 27 cheese pimiento | clean test of the current code | 12/45 / 16/45 | 8/9 | 5/5 |
 
 What this means: it catches at least one error in most recordings that have one, mostly skipped steps, wrong order
 and mishaps. It does not reliably catch technique, quantity or temperature errors (most aren't visible as

@@ -46,6 +46,7 @@ task graphs by Glimmer (`scripts/make_protocol.py`), not hand-tuned.
 | 10 pinwheels (11) | dev (informed visibility calibration and the aligner fixes) | 19/91 (19) | 32/91 | 21 / 7 | 7/8 | 3/3 | 105/180 |
 | 1 microwave egg sandwich (17) | dev (informed aligner fix 030118f) | 18/77 (17) | 40/77 | 34 / 14 | 11/13 | 2/4 | 121/181 |
 | 3 mug pizza (12) | clean test at afde3bd (see below); rescored here with the later rules | 9/43 (7) | 21/43 | 38 / 17 | 5/7 | 5/5 | 100/157 |
+| 27 cheese pimiento (14) | **clean test of the current code** (protocol frozen before any run) | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 5/5 | 88/139 |
 
 Numbers are with the aligner and scorer fixes from the PR #27 review (e7e83b3, 912a19b); all sessions were
 re-scored offline from their saved Glimmer events. EDA leaves out Measurement/Temperature-only steps, like every
@@ -56,6 +57,13 @@ Rows above use the current code: aligner fix 030118f and mishap flags backed onl
 same mishap is seen again (ISSUE_STRONG). That rule was chosen on all five recipes together: it cuts 33 of 192 false
 alarms for 8 of 63 strict catches, and mishap flags go from ~15% to 36% precise (8 right, 14 wrong). Every recipe
 here has now informed a decision; the next clean test is a fresh recipe.
+
+Recipe 27 is the clean test of the current code (030118f aligner fix and ISSUE_STRONG): protocol generated and
+committed before any run, visibility calibrated from its expert run 27_13 (3 of 12 steps hidden), nothing changed
+after seeing the result. It catches at least one error in 8 of 9 error recordings (strict 27%, lenient 36%), with
+about 1.9 false alarms per recording (recipe 3: about 4.6), but still a mid-clip alarm on every normal recording.
+Mishap flags were 4 right, 1 wrong (recipe 3 before ISSUE_STRONG: 4 right, 26 wrong). Different recipes, one run
+each: this is consistent with the precision rules generalizing, not proof.
 
 Recipe 3's clean result, as run before these two changes (afde3bd): strict 13/43 (11), lenient 28/43, false alarms
 56 / 17, error clips 6/7, every normal clip with a mid-clip alarm, EDA 102/157. Recipe 3 is the clean out-of-sample result (recipe 1 informed the aligner fix 030118f): it finds mistakes about
