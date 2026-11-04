@@ -35,7 +35,7 @@ Glimmer notes (2026-10-31, 12_119 keyframes, no SAM, events fed to the aligner):
 ## End-to-end real-time run with the current defaults (2026-11-04)
 
 `replay --pace realtime` (live 60 s vision timeout, 4 keyframes, `--issues`, no SAM, Glimmer with the drafter),
-run on dsp with no other job of ours on the Glimmer server, on 12_41 (470 s) and 8_31:
+run on the GPU cluster with no other job of ours on the Glimmer server, on 12_41 (470 s) and 8_31:
 
 | Clip | Glimmer call p50 / p90 | Window close -> events reach the aligner, p50 / p90 / max | Failed windows |
 |---|---|---|---|

@@ -135,7 +135,7 @@ class LocalSam:
     frames = 0
 
     def __init__(self, url: str, fps: float = 10.0, stride: int = 2, timeout: float = 120):
-        # stride 2 = track at fps/2: ~1.8x faster per chunk on dsp, same objects found (cluster benchmark 2026-11-01)
+        # stride 2 = track at fps/2: ~1.8x faster per chunk on the GPU cluster, same objects found (cluster benchmark 2026-11-01)
         self.url, self.fps, self.stride, self.timeout = url.rstrip("/"), fps, stride, timeout
 
     def track(self, chunk, prompts, t0, errors: list[str] | None = None):
