@@ -113,7 +113,11 @@ Ruled out (measured): skipping Glimmer's reasoning (misses most steps); protocol
 (Glimmer echoes "slice"), steps-only or technique-definition prompts (more false alarms on 17 clips); gating
 end-of-clip asks on later steps (loses 5/6 omissions); merging two Glimmer runs (no better than the better run);
 frozen V-JEPA 2 ViT-L probes (error detection AUC ~0.55, below chance across recipes; step recognition 0.22-0.28
-from one expert run); SAM 3.1 in the verdict path (12_41 fell 16 min behind).
+from one expert run); SAM 3.1 in the verdict path (12_41 fell 16 min behind). Expected-step verification (`--verify` on branch exp/verify-step:
+a second Glimmer call per window asking yes/no about the next 3 expected steps plus a decoy; per-window recall
+0.04 -> 0.14 on recipe 8 in a sampled test) did not carry over end to end: on recipe 27, the same run with and
+without its events gives strict 9 vs 9, lenient 14 vs 13, mid-clip false alarms 21 vs 19, and the decoy got a
+"yes" in 505 of 4619 windows (11%, vs ~1% in the sampled test), at twice the Glimmer calls. Not merged.
 
 8 frames per window (`--nframes 8 --pair`, recipe 12, 14 of 17 clips, same clips compared): no gain. Tune strict
 8/24 both, lenient 12 vs 13, mid-clip false alarms 5 vs 4; held-out 1/3 vs 0/3 (noise). Each Glimmer call costs
