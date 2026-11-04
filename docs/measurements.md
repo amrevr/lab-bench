@@ -38,6 +38,7 @@ run on dsp with no other job of ours on the Glimmer server, on 12_41 (470 s) and
 |---|---|---|---|
 | 12_41 | 15.7 / 29.8 s | 120 / 205 / 230 s | 0 of 189 |
 | 8_31 | 14.8 / 31.6 s | 89 / 132 / 150 s | 0 of 107 |
+| 12_41, hosted Muse Spark Open (Baseten), same settings | 4.9 / 11.5 s | 6.5 / 11.9 / 16.9 s | 0 of 189 |
 
 Not real time on this run: the H100s were at 100% utilization from another user's jobs (about 32 GB and 9 GB,
 started during the run), and each Glimmer call took ~8x its idle-GPU time (1.8 s p50 at real-time pace, table
@@ -45,6 +46,12 @@ above), so windows queued and verdicts fell 1.5-4 minutes behind. With GPUs to o
 latency (1.8 s p50, 4.1 s p90) is below the 2.5 s window stride, which is what real time needs; that end-to-end
 claim was not re-measured on an idle machine. Real time therefore needs dedicated GPUs (or the hosted backend),
 not a shared machine.
+
+The same real-time replay of 12_41 on the hosted Spark Open backend kept up: window close to events in the aligner
+6.5 s median and never more than 17 s (no backlog over the 470 s clip), verdicts 3.7-14.1 s after their window
+closed (median about 9 s). It raised the same technique flag on the tomato slicing (step 119) 8.7 s after the
+window closed; the shared-GPU Glimmer run raised it 70 s late. This is near real time (alerts about 10 s after the
+moment), measured end to end on dedicated hosted hardware.
 
 ## Accuracy and generalization (2026-11-01/03)
 

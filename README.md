@@ -43,7 +43,8 @@ becomes a question or is dropped. Mishap flags need confidence >= 0.8 or a repea
 **Speed.** With the speculative drafter (4 draft tokens), a Glimmer call at real-time pace takes 1.8 s median
 (4.1 s p90), down from 3.6 s (7.7 s): fast enough for a 2.5 s window stride. On a shared machine the end-to-end run
 was not real time: with another user's jobs saturating the GPUs, calls took ~15 s and verdicts fell 1.5-4 minutes
-behind. Real time needs dedicated GPUs (details in `docs/measurements.md`).
+behind. On the hosted Spark Open backend the same real-time replay kept up end to end: alerts about 9 s after
+their window closed (median), never more than 17 s, with no backlog (details in `docs/measurements.md`).
 
 **Accuracy** against CaptainCook4D's timed error annotations. Strict = right step and compatible verdict, during
 the step or within 30 s; lenient = any warning on that step. The expert recording is never scored.
