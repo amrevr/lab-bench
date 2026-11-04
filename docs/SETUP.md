@@ -71,8 +71,8 @@ python3 -m labbench.replay --clip ../data/clips/12_119.mp4 --protocol ../fixture
   from level 2 with that recipe's fixtures.
 - Each recipe's visibility calibration (which steps the vision model can see at all) comes from its expert run:
   `python3 scripts/calibrate_visibility.py --protocol fixtures/recipe27/protocol.json --expert-session out/27_13.session.json --out out/recipe27.protocol.json`.
-  The expert clip is `source_clip` in each protocol. Calibration differs per backend, so the numbers in
-  `docs/measurements.md` use a protocol calibrated for that backend.
+  The expert clip is `source_clip` in each protocol. Calibration differs per backend, so the README numbers
+  use a protocol calibrated for that backend.
 
 ## 4. Self-hosted Muse Glimmer 30B (2x H100)
 
@@ -95,6 +95,6 @@ cd backend && python3 -m labbench.replay ... --backend glimmer      # same flags
 
 ## What the numbers mean
 
-The README results and `docs/measurements.md` come from one run per clip. Repeat runs vary by about 4 strict catches
+The README results come from one run per clip. Repeat runs vary by about 4 strict catches
 per recipe. The session files behind each table (other than 12_119) are not in the repo, so to reproduce a row,
 re-run level 3 or 4 on that recipe's clips.
