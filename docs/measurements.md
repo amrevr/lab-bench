@@ -72,6 +72,12 @@ task graphs by Glimmer (`scripts/make_protocol.py`), not hand-tuned.
 | 3 mug pizza (12) | clean test at afde3bd (see below); rescored here with the later rules | 9/43 (7) | 21/43 | 38 / 17 | 5/7 | 5/5 | 100/157 |
 | 27 cheese pimiento (14) | **clean test of the current code** (protocol frozen before any run) | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 5/5 | 88/139 |
 
+Calibration used by these rows: the committed `fixtures/recipe{1,3,27}/protocol.json` are the pre-calibration
+protocols. Each row was scored with a copy calibrated per backend from that recipe's expert run (the protocol's
+`source_clip`), e.g. for recipe 27 on Glimmer:
+`python3 scripts/calibrate_visibility.py --protocol fixtures/recipe27/protocol.json --expert-session <27_13.session.json> --out /tmp/r27_cal.json`,
+then `python -m labbench.eval ... --realign /tmp/r27_cal.json`. Recipes 10 and 12 ship already calibrated.
+
 Numbers are with the aligner and scorer fixes from the PR #27 review (e7e83b3, 912a19b); all sessions were
 re-scored offline from their saved Glimmer events. EDA leaves out Measurement/Temperature-only steps, like every
 other line. Mishap ("issue") verdicts are counted separately: 12 caught an annotated error and 19 were false alarms
@@ -97,7 +103,7 @@ visibility calibrated from its own expert run; one run each):
 | Glimmer 30B, self-hosted | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 4 / 1 | 0 of 4619 |
 | Spark Open, hosted (Baseten) | 15/45 (15) | 24/45 | 39 / 6 | 8/9 | 7 / 4 | 29 of 4619 |
 
-Spark sees more of recipe 27 (calibration hides 0 of 11 steps vs 3 for Glimmer; `fixtures/recipe27/protocol.spark.json`), catches more errors and catches
+Spark sees more of recipe 27 (calibration hides 0 of 11 steps vs 3 for Glimmer;), catches more errors and catches
 them on time (15 of 15 strict catches within the step, vs 9 of 12), and it is the backend that keeps up end to end in
 real time (above). The cost is about twice the mid-clip false alarms. Strict differences are within run-to-run
 noise; lenient (+8) and false alarms (+19) are larger than the noise seen on recipe 8. Neither backend dominates:

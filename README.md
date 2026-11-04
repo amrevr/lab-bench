@@ -35,7 +35,7 @@ becomes a question or is dropped. Mishap flags need confidence >= 0.8 or a repea
 | Muse Glimmer 30B + `Muse-Glimmer-30B-assistant` drafter | vision events per window; writes protocols from step text | self-hosted, vLLM, tensor parallel 2, FP8, 2x H100 |
 | Muse Wonder | coaching text | Meta Model API |
 | Muse Spark Open | alternate vision backend (`--backend spark`) | hosted on Baseten |
-| SAM 3.1 | object tracks; optional (`--sam`, `--sam-url`), off by default | Meta Model API or self-hosted |
+| SAM 3.1 | object tracks; optional (`--sam`), off by default, no verdict uses them | Meta Model API (we also ran it self-hosted; that service is not in this repo) |
 | V-JEPA 2 ViT-L | evaluated as features for error detection and action recognition; not adopted | self-hosted |
 
 ## Results (measured, one run per clip)
@@ -71,7 +71,9 @@ What this means: it catches at least one error in most recordings that have one,
 and mishaps. It does not reliably catch technique, quantity or temperature errors (most aren't visible as
 steps). Precision on unseen recipes is the main weakness: about 2-5 false alarms per recording (recipe 27: 1.9; recipe 3: 4.6). Accuracy depends
 strongly on how visible a recipe's steps are to the vision model. Repeat runs vary by about 4 strict catches.
-Full table, method and caveats: [docs/measurements.md](docs/measurements.md).
+Recipes 1, 3 and 27 were scored with protocols calibrated per backend from the expert run
+(`scripts/calibrate_visibility.py`); the committed fixtures are the pre-calibration versions. Full table, method,
+calibration command and caveats: [docs/measurements.md](docs/measurements.md).
 
 **Tried, measured, dropped:** SAM tracks in the loop (no verdict changed, real-time headroom lost), V-JEPA 2
 features (error AUC ~0.55; a cross-recipe action probe below the majority baseline), a Glimmer "second look"

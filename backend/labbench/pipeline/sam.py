@@ -131,7 +131,7 @@ class MetaSam:
 
 
 class LocalSam:
-    """Self-hosted SAM 3.1 (cluster/serve_sam.py on dsp, forwarded here): one request per chunk, all prompts. No cost."""
+    """A self-hosted SAM 3.1 tracking service at `base_url` (POST /track; the service itself is not in this repo): one request per chunk, all prompts."""
     frames = 0
 
     def __init__(self, url: str, fps: float = 10.0, stride: int = 2, timeout: float = 120):

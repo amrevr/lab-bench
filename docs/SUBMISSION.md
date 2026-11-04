@@ -28,7 +28,7 @@ novice clip -> chunker (3 s windows, 0.5 s overlap, 10 fps / 480p H.264, 4 keyfr
 
 | Component | Model | Where it runs |
 |---|---|---|
-| Object tracks (optional, off by default; no verdict uses them) | SAM 3.1 | Hosted Meta Model API, or self-hosted on the H100s (`--sam-url`) |
+| Object tracks (optional, off by default; no verdict uses them) | SAM 3.1 | Hosted Meta Model API (`--sam`); a self-hosted service was used in experiments but is not in this repo |
 | Event extraction, backend `spark` | Muse Spark Open (`muse-spark-open-1026`) | Hosted, Baseten |
 | Event extraction, backend `glimmer` | Muse Glimmer 30B, FP8, vLLM, tensor parallel 2 | Self-hosted on 2x H100 (shared machine), reached over an SSH forward |
 | Coaching text | Muse Wonder (`muse-wonder-1.0`, effort low) | Hosted, Meta Model API |

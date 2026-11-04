@@ -1,17 +1,17 @@
 { "name": "Microwave Egg Sandwich (CaptainCook4D recipe 1, generated)", "source_clip": "1_14", "partial_order": true, "steps": [
-  { "id": 12, "label": "cut english muffin", "recipe_text": "Cut -Cut the English muffin into two pieces with a knife", "action": "cut", "aliases": [ "slice" ], "obj": "english muffin", "visible": true },
-  { "id": 3, "label": "coat ramekin with spray", "recipe_text": "Coat -Coat a 6-oz. ramekin cup with cooking spray", "action": "spray", "aliases": [ "add", "coat" ], "obj": "cooking spray", "target": "ramekin cup", "visible": true },
-  { "id": 1, "label": "pour egg into ramekin", "recipe_text": "Pour-Pour 1 egg into the ramekin cup", "action": "pour", "aliases": [ "add" ], "obj": "egg", "target": "ramekin cup", "after": [ 3 ], "visible": true },
+  { "id": 12, "label": "cut english muffin", "recipe_text": "Cut -Cut the English muffin into two pieces with a knife", "action": "cut", "aliases": [ "slice" ], "obj": "english muffin" },
+  { "id": 3, "label": "coat ramekin with spray", "recipe_text": "Coat -Coat a 6-oz. ramekin cup with cooking spray", "action": "spray", "aliases": [ "add", "coat" ], "obj": "cooking spray", "target": "ramekin cup" },
+  { "id": 1, "label": "pour egg into ramekin", "recipe_text": "Pour-Pour 1 egg into the ramekin cup", "action": "pour", "aliases": [ "add" ], "obj": "egg", "target": "ramekin cup", "after": [ 3 ] },
   { "id": 4, "label": "microwave ramekin 30 seconds", "recipe_text": "Microwave-Microwave the ramekin cup uncovered on high for 30 seconds", "action": "microwave", "aliases": [ "heat", "warm" ], "seen_as": [
-    { "action": "place", "target": "microwave" } ], "obj": "ramekin cup", "after": [ 1 ], "visible": true },
-  { "id": 11, "label": "stir ramekin cup", "recipe_text": "stir-stir the ramekin cup", "action": "stir", "aliases": [ "mix" ], "obj": "ramekin cup", "after": [ 4 ], "visible": true },
+    { "action": "place", "target": "microwave" } ], "obj": "ramekin cup", "after": [ 1 ] },
+  { "id": 11, "label": "stir ramekin cup", "recipe_text": "stir-stir the ramekin cup", "action": "stir", "aliases": [ "mix" ], "obj": "ramekin cup", "after": [ 4 ] },
   { "id": 8, "label": "microwave egg until set", "recipe_text": "Microwave -Continue to Microwave for 15-30 more seconds or until the egg is almost set", "action": "microwave", "aliases": [ "heat", "warm" ], "seen_as": [
-    { "action": "place", "target": "microwave" } ], "obj": "ramekin cup", "after": [ 11 ], "visible": true },
-  { "id": 6, "label": "top cup with salsa", "recipe_text": "Top -Top cup with 1 tablespoon of salsa", "action": "add", "aliases": [ "pour", "top" ], "obj": "salsa", "target": "ramekin cup", "after": [ 8 ], "visible": true },
-  { "id": 9, "label": "line muffin with lettuce", "recipe_text": "Line -Line the bottom piece of the English muffin with lettuce", "action": "place", "aliases": [ "line" ], "obj": "lettuce", "target": "english muffin", "after": [ 12 ], "visible": true },
-  { "id": 5, "label": "sprinkle cheese on cup", "recipe_text": "sprinkle -sprinkle 1 tablespoon of cheese on cup", "action": "sprinkle", "aliases": [ "add" ], "obj": "cheese", "target": "ramekin cup", "after": [ 6 ], "visible": true },
+    { "action": "place", "target": "microwave" } ], "obj": "ramekin cup", "after": [ 11 ] },
+  { "id": 6, "label": "top cup with salsa", "recipe_text": "Top -Top cup with 1 tablespoon of salsa", "action": "add", "aliases": [ "pour", "top" ], "obj": "salsa", "target": "ramekin cup", "after": [ 8 ] },
+  { "id": 9, "label": "line muffin with lettuce", "recipe_text": "Line -Line the bottom piece of the English muffin with lettuce", "action": "place", "aliases": [ "line" ], "obj": "lettuce", "target": "english muffin", "after": [ 12 ] },
+  { "id": 5, "label": "sprinkle cheese on cup", "recipe_text": "sprinkle -sprinkle 1 tablespoon of cheese on cup", "action": "sprinkle", "aliases": [ "add" ], "obj": "cheese", "target": "ramekin cup", "after": [ 6 ] },
   { "id": 10, "label": "microwave until cheese melts", "recipe_text": "Microwave -Microwave just until cheese melts, about 10 seconds", "action": "microwave", "aliases": [ "heat", "warm" ], "seen_as": [
-    { "action": "place", "target": "microwave" } ], "obj": "ramekin cup", "after": [ 5 ], "visible": true },
-  { "id": 2, "label": "place egg over lettuce", "recipe_text": "Place -Place the egg from the cup over the lettuce", "action": "place", "aliases": [ "set" ], "obj": "egg", "target": "lettuce", "after": [ 9, 10 ], "visible": true },
-  { "id": 7, "label": "replace english muffin top", "recipe_text": "replace -replace the top of the English muffin", "action": "place", "aliases": [ "put", "replace" ], "obj": "english muffin top", "target": "english muffin", "after": [ 2 ], "visible": false } ]
+    { "action": "place", "target": "microwave" } ], "obj": "ramekin cup", "after": [ 5 ] },
+  { "id": 2, "label": "place egg over lettuce", "recipe_text": "Place -Place the egg from the cup over the lettuce", "action": "place", "aliases": [ "set" ], "obj": "egg", "target": "lettuce", "after": [ 9, 10 ] },
+  { "id": 7, "label": "replace english muffin top", "recipe_text": "replace -replace the top of the English muffin", "action": "place", "aliases": [ "put", "replace" ], "obj": "english muffin top", "target": "english muffin", "after": [ 2 ] } ]
 }
