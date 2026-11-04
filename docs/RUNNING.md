@@ -13,8 +13,7 @@ Keys come from environment variables only and are never committed (`.env` is git
 
 In the dev sandbox the keys are injected by the proxy. Use `urllib`/`curl`-style clients: the OpenAI-SDK-style
 client bypassed the proxy and got a 401 (issue #14). Without `META_API_KEY`, Wonder returns the aligner's own
-message. Note `.env.example` still shows old placeholder values (`api.meta.example`, `muse-wonder`); the code
-defaults above are the working ones (`WONDER_MODEL` default `muse-wonder-1.0`).
+message.
 
 ## Tests, offline eval (no API calls, no cost)
 

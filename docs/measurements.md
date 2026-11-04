@@ -44,7 +44,7 @@ task graphs by Glimmer (`scripts/make_protocol.py`), not hand-tuned.
 | 12 | held-out | 0/7 (0) | 2/7 | 6 / 2 | 0/2 | 1/3 | 33/44 |
 | 8 hot chocolate (15) | dev (generalization fixes tuned here) | 15/41 (9) | 28/41 | 8 / 25 | 9/9 | 2/6 | 60/89 |
 | 10 pinwheels (11) | dev (informed visibility calibration and the aligner fixes) | 19/91 (19) | 32/91 | 21 / 7 | 7/8 | 3/3 | 105/180 |
-| 1 microwave egg sandwich (7 of 17 so far) | dev (informed aligner fix 030118f) | 5/21 (5) | 13/21 | 19 / 5 | 3/4 | 1/3 | 56/77 |
+| 1 microwave egg sandwich (17) | dev (informed aligner fix 030118f) | 18/77 (17) | 40/77 | 34 / 14 | 11/13 | 2/4 | 121/181 |
 | 3 mug pizza (12) | clean test at afde3bd (see below); rescored here with the later rules | 9/43 (7) | 21/43 | 38 / 17 | 5/7 | 5/5 | 100/157 |
 
 Numbers are with the aligner and scorer fixes from the PR #27 review (e7e83b3, 912a19b); all sessions were
@@ -66,8 +66,7 @@ Recipe 1 was the first clean out-of-sample result: its protocol was generated an
 nothing was changed after seeing its numbers. It is much weaker than recipes 8 and 12: Glimmer recognizes its steps
 (spraying a ramekin, three microwave steps, assembly) poorly, and calibration hides only 1 of its 12 steps, so the
 aligner asks about steps Glimmer simply missed. Accuracy depends strongly on how visible a recipe's steps are to
-the vision model; a single headline number across recipes would mislead. The row is interim (7 of 17 scorable
-clips) and will be completed.
+the vision model; a single headline number across recipes would mislead.
 
 Recipe 10's first, fully untouched result (before visibility calibration): strict 25/91, lenient 48/91, 83 false
 alarms, EDA 49%.
