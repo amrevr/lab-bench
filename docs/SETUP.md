@@ -34,7 +34,7 @@ This is one recorded replay of CaptainCook4D clip 12_119 (recipe 12, tomato sala
 ```
 mkdir -p out/sessions data/clips
 curl -L -o out/sessions/12_119.session.json https://files.catbox.moe/x062ss.json
-curl -L -o data/clips/12_119.mp4 https://files.catbox.moe/xe5dwu.mp4     # CaptainCook4D, Apache-2.0
+curl -L -o data/clips/12_119.mp4 https://files.catbox.moe/xe5dwu.mp4     # 150 MB; CaptainCook4D, Apache-2.0
 
 # re-run the current aligner on the stored events and score against the dataset's timed annotations
 cd backend && python3 -m labbench.eval --cc4d ../fixtures/recipe12/cc4d_error_annotations.json \
