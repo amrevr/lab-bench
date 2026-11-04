@@ -59,7 +59,7 @@ the step or within 30 s; lenient = any warning on that step. The expert recordin
 
 What this means: it catches at least one error in most recordings that have one, mostly skipped steps, wrong order
 and mishaps. It does not reliably catch technique, quantity or temperature errors (most aren't visible as
-steps). Precision on unseen recipes is the main weakness: about 3-6 false alarms per recording. Accuracy depends
+steps). Precision on unseen recipes is the main weakness: about 2-5 false alarms per recording (recipe 27: 1.9; recipe 3: 4.6). Accuracy depends
 strongly on how visible a recipe's steps are to the vision model. Repeat runs vary by about 4 strict catches.
 Full table, method and caveats: [docs/measurements.md](docs/measurements.md).
 
