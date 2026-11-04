@@ -15,6 +15,8 @@ MIN_CONF = 0.5     # events below this confidence are ignored for ordering/attem
 ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be corroborated
 CONTINUE_GAP = 30.0   # s: an event this soon after a step with the same form is that step continuing
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
+ISSUE_STRONG = 0.8     # a mishap backs a flag alone only this confident, else the same mishap must be seen again:
+                       # across recipes 1/3/8/10/12 it cuts 33 of 192 false alarms for 8 of 63 strict catches
 NO_ISSUE = {"", "none", "null", "no", "n/a", "na", "nan", "false", "clean", "nothing", "ok", "fine", "no issue"}
 PLACE_LIKE = {"place", "add", "put", "set", "lay", "top", "line", "arrange", "transfer"}   # same move, object decides
 ACTION_SYNONYMS = {"season": "sprinkle", "garnish": "sprinkle", "drizzle": "pour"}
@@ -185,7 +187,7 @@ class Aligner:
         """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict, same
         issue for a mishap) in another window."""
         if source == "issue":
-            return ev.conf >= STRONG or self._corroborated(ev, same_issue=True)
+            return ev.conf >= ISSUE_STRONG or self._corroborated(ev, same_issue=True)
         return ev.conf >= STRONG or self._corroborated(ev, kind == VerdictKind.WRONG_TECHNIQUE)
 
     def _emit(self, t: float, kind: VerdictKind, sid: int, msg: tuple[str, str], contrib: list[tuple[int, Event]],

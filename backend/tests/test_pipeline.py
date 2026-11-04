@@ -383,3 +383,12 @@ class GeneralMatchingTests(unittest.TestCase):
         self.assertEqual((st.id, how), (1, "exact"))
         st, _ = al._find(Event(t_start=0, t_end=1, action="cut", obj="lettuce", conf=0.9))
         self.assertIsNone(st)
+
+
+class IssueConfidenceTests(unittest.TestCase):
+    def test_a_moderately_confident_mishap_needs_a_second_window(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        mk = lambda c, t=0: Event(t_start=t, t_end=t + 1, action="fill", obj="milk", target="mug", issue="spill", conf=c, chunk=[t, t + 3])
+        self.assertNotIn("issue", [v.source for v in Aligner(p).feed(mk(0.7))])
+        self.assertIn("issue", [v.source for v in Aligner(p).feed(mk(0.9))])
