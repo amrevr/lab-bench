@@ -40,12 +40,19 @@ becomes a question or is dropped. Mishap flags need confidence >= 0.8 or a repea
 
 ## Results (measured, one run per clip)
 
-**Speed.** With the speculative drafter (4 draft tokens), a Glimmer call at real-time pace takes 1.8 s median
-(4.1 s p90), down from 3.6 s (7.7 s): fast enough for a 2.5 s window stride. On a shared machine the end-to-end run
-was not real time: with another user's jobs saturating the GPUs, calls took ~15 s and verdicts fell 1.5-4 minutes
-behind. On the hosted Spark Open backend the same real-time replay kept up end to end: alerts about 9 s after
-their window closed (median), never more than 17 s, with no backlog (details in `docs/measurements.md`). On recipe 27, Spark also caught more errors (strict 15/45, all on time,
-vs Glimmer's 12/45) at about twice Glimmer's mid-clip false alarms.
+**What a user would experience: hosted vs self-hosted.** Both backends ran the same pipeline, aligner and scorer.
+
+| | Hosted: Muse Spark Open (Baseten) | Self-hosted: Muse Glimmer 30B (2x H100) |
+|---|---|---|
+| Live, end to end (12_41 at real-time pace) | keeps up: alerts ~9 s after the moment (median), max 17 s | 1.8 s per call on dedicated GPUs (4.1 s p90); on a shared, saturated machine calls took ~15 s and alerts fell 1.5-4 min behind |
+| Recipe 27 (never tuned on): errors caught on time / lenient | **15/45** / **24/45** | 9/45 / 16/45 |
+| Error recordings with a catch | 8/9 | 8/9 |
+| Mid-clip false alarms | 39 | **20** |
+| Video leaves your machines | yes (hosted API) | no |
+
+Spark gives more and earlier catches and is the live option; Glimmer gives fewer false alarms and keeps video
+local. The drafter halved Glimmer's per-call latency (3.6 s -> 1.8 s median at real-time pace). One run per
+backend; details in `docs/measurements.md`.
 
 **Accuracy** against CaptainCook4D's timed error annotations. Strict = right step and compatible verdict, during
 the step or within 30 s; lenient = any warning on that step. The expert recording is never scored.
