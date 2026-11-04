@@ -4,7 +4,10 @@
 |---|---|---|---|---|
 | ffmpeg cut 4 s chunk, 480p H.264 | build container CPU | 1.6 s | n/a | single run, 2026-10-27 |
 | ffmpeg 4 keyframes, 640 px | build container CPU | 1.1 s | n/a | single run |
-| SAM 3.1 upload / first frame / total | n/a | not measured | | needs key or H100 |
+| SAM 3.1 upload (`/v1/files`), 2 s or 5 s clip | hosted Meta Model API | 2.4-2.6 s | 4.0-4.8 s | 10+10 runs, 2026-10-31 (issue #14) |
+| SAM 3.1 time to first delta | same | 2.3-2.4 s | 2.6-2.7 s | 10+10 runs |
+| SAM 3.1 total, `one_bit` masks, 2 s / 5 s clip | same | 4.0 / 8.8 s | 4.4 / 9.4 s | 5 runs each; ~2.3 s startup + 0.04-0.06 s per frame, slower than real time |
+| SAM 3.1 total, lossless masks (default), 2 s / 5 s clip | same | 10.8 / 19.7 s | 15.2 / 20.4 s | 10 runs each |
 | Glimmer call, 4 keyframes 640 px, reasoning low, 1 in flight | 2x H100 TP=2 FP8, idle | 2.2 s | 4.8 s | 1416 prompt tokens, 50-400 output (mostly reasoning); 45 windows of 12_119, 2026-10-31 |
 | Same, 5 in flight (pipeline load) | same | 3.4 s | 6.9 s | all 177 windows of 12_119 |
 
