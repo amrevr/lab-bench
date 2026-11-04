@@ -1,15 +1,15 @@
 { "name": "Cheese Pimiento (CaptainCook4D recipe 27, generated)", "source_clip": "27_13", "partial_order": true, "steps": [
-  { "id": 321, "label": "Chop red bell pepper", "recipe_text": "Chop-Chop 1/4 red bell pepper into tiny bits", "action": "cut", "aliases": [ "chop", "dice" ], "obj": "red bell pepper", "technique": "chop" },
-  { "id": 316, "label": "Add cheese to cup", "recipe_text": "Add-Add 1/3 cup cheddar cheese to a microwave-safe cup", "action": "add", "aliases": [ "place", "put" ], "obj": "cheddar cheese", "target": "microwave-safe cup" },
-  { "id": 322, "label": "Place pepper in bowl", "recipe_text": "Place-Place the chopped pepper in the microwave-safe bowl", "action": "place", "aliases": [ "add", "put" ], "obj": "red bell pepper", "target": "bowl", "after": [ 321 ] },
-  { "id": 320, "label": "Add water to bowl", "recipe_text": "Add-Add 1 tablespoons of water to the bowl", "action": "add", "aliases": [ "pour", "put" ], "obj": "water", "target": "bowl" },
+  { "id": 321, "label": "Chop red bell pepper", "recipe_text": "Chop-Chop 1/4 red bell pepper into tiny bits", "action": "cut", "aliases": [ "chop", "dice" ], "obj": "red bell pepper", "technique": "chop", "visible": true },
+  { "id": 316, "label": "Add cheese to cup", "recipe_text": "Add-Add 1/3 cup cheddar cheese to a microwave-safe cup", "action": "add", "aliases": [ "place", "put" ], "obj": "cheddar cheese", "target": "microwave-safe cup", "visible": true },
+  { "id": 322, "label": "Place pepper in bowl", "recipe_text": "Place-Place the chopped pepper in the microwave-safe bowl", "action": "place", "aliases": [ "add", "put" ], "obj": "red bell pepper", "target": "bowl", "after": [ 321 ], "visible": true },
+  { "id": 320, "label": "Add water to bowl", "recipe_text": "Add-Add 1 tablespoons of water to the bowl", "action": "add", "aliases": [ "pour", "put" ], "obj": "water", "target": "bowl", "visible": false },
   { "id": 323, "label": "Microwave cup to melt", "recipe_text": "Melt-Melt the cheese by microwaving cup for 30 sec. (Check after 30 seconds and microwave for 10 seconds more if needed)", "action": "microwave", "aliases": [ "heat", "melt", "warm" ], "seen_as": [
-    { "action": "place", "target": "microwave" } ], "obj": "microwave-safe cup", "after": [ 316 ] },
+    { "action": "place", "target": "microwave" } ], "obj": "microwave-safe cup", "after": [ 316 ], "visible": true },
   { "id": 318, "label": "Microwave bowl covered", "recipe_text": "Microwave-Microwave the bowl, covered, for 2 minutes", "action": "microwave", "aliases": [ "heat", "warm" ], "seen_as": [
-    { "action": "place", "target": "microwave" } ], "obj": "bowl", "after": [ 320, 322 ] },
-  { "id": 317, "label": "Mix cheese and pepper", "recipe_text": "Mix-Mix the cheese and red bell pepper in the bowl", "action": "mix", "aliases": [ "combine", "stir" ], "obj": "bowl", "after": [ 318, 323 ] },
-  { "id": 319, "label": "Add pepper to bowl", "recipe_text": "Add-Add 1/4 teaspoon pepper to the bowl", "action": "add", "aliases": [ "put", "sprinkle" ], "obj": "pepper", "target": "bowl", "after": [ 317 ] },
-  { "id": 315, "label": "Add salt to bowl", "recipe_text": "Add-Add 1/4 teaspoon salt to the bowl", "action": "add", "aliases": [ "put", "sprinkle" ], "obj": "salt", "target": "bowl", "after": [ 317 ] },
-  { "id": 314, "label": "Add butter to bowl", "recipe_text": "add-add 1/2 tbsp softened butter to the bowl", "action": "add", "aliases": [ "drop", "put" ], "obj": "butter", "target": "bowl", "after": [ 317 ] },
-  { "id": 324, "label": "Mix bowl ingredients well", "recipe_text": "Mix-Mix all the ingredients of the bowl well", "action": "mix", "aliases": [ "combine", "stir" ], "obj": "bowl", "after": [ 314, 315, 319 ] } ]
+    { "action": "place", "target": "microwave" } ], "obj": "bowl", "after": [ 320, 322 ], "visible": false },
+  { "id": 317, "label": "Mix cheese and pepper", "recipe_text": "Mix-Mix the cheese and red bell pepper in the bowl", "action": "mix", "aliases": [ "combine", "stir" ], "obj": "bowl", "after": [ 318, 323 ], "visible": true },
+  { "id": 319, "label": "Add pepper to bowl", "recipe_text": "Add-Add 1/4 teaspoon pepper to the bowl", "action": "add", "aliases": [ "put", "sprinkle" ], "obj": "pepper", "target": "bowl", "after": [ 317 ], "visible": false },
+  { "id": 315, "label": "Add salt to bowl", "recipe_text": "Add-Add 1/4 teaspoon salt to the bowl", "action": "add", "aliases": [ "put", "sprinkle" ], "obj": "salt", "target": "bowl", "after": [ 317 ], "visible": true },
+  { "id": 314, "label": "Add butter to bowl", "recipe_text": "add-add 1/2 tbsp softened butter to the bowl", "action": "add", "aliases": [ "drop", "put" ], "obj": "butter", "target": "bowl", "after": [ 317 ], "visible": true },
+  { "id": 324, "label": "Mix bowl ingredients well", "recipe_text": "Mix-Mix all the ingredients of the bowl well", "action": "mix", "aliases": [ "combine", "stir" ], "obj": "bowl", "after": [ 314, 315, 319 ], "visible": true } ]
 }

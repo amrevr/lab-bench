@@ -83,7 +83,7 @@ alarms for 8 of 63 strict catches, and mishap flags go from ~15% to 36% precise 
 here has now informed a decision; the next clean test is a fresh recipe.
 
 Recipe 27 is the clean test of the current code (030118f aligner fix and ISSUE_STRONG): protocol generated and
-committed before any run, visibility calibrated from its expert run 27_13 (3 of 12 steps hidden), nothing changed
+committed before any run, visibility calibrated from its expert run 27_13 (3 of 11 steps hidden), nothing changed
 after seeing the result. It catches at least one error in 8 of 9 error recordings (strict 27%, lenient 36%), with
 about 1.9 false alarms per recording (recipe 3: about 4.6), but still a mid-clip alarm on every normal recording.
 Mishap flags were 4 right, 1 wrong (recipe 3 before ISSUE_STRONG: 4 right, 26 wrong). Different recipes, one run
@@ -97,7 +97,7 @@ visibility calibrated from its own expert run; one run each):
 | Glimmer 30B, self-hosted | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 4 / 1 | 0 of 4619 |
 | Spark Open, hosted (Baseten) | 15/45 (15) | 24/45 | 39 / 6 | 8/9 | 7 / 4 | 29 of 4619 |
 
-Spark sees more of recipe 27 (calibration hides 0 of 12 steps vs 3 for Glimmer), catches more errors and catches
+Spark sees more of recipe 27 (calibration hides 0 of 11 steps vs 3 for Glimmer; `fixtures/recipe27/protocol.spark.json`), catches more errors and catches
 them on time (15 of 15 strict catches within the step, vs 9 of 12), and it is the backend that keeps up end to end in
 real time (above). The cost is about twice the mid-clip false alarms. Strict differences are within run-to-run
 noise; lenient (+8) and false alarms (+19) are larger than the noise seen on recipe 8. Neither backend dominates:
