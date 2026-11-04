@@ -19,7 +19,7 @@ message.
 
 ```
 python3 -m pip install -r backend/requirements.txt     # pydantic, imageio-ffmpeg
-cd backend && python3 -m unittest discover -s tests    # 42 tests at PR #22
+cd backend && python3 -m unittest discover -s tests    # or scripts/check.sh from the repo root
 python3 -m labbench.eval                               # synthetic self-test, 4 synthetic error clips
 python3 -m labbench.eval --root <dir> --manifest <manifest.json>
 python3 -m labbench.eval --cc4d ../fixtures/recipe12/cc4d_error_annotations.json --sessions <dir of *.session.json> \
@@ -34,7 +34,7 @@ python3 ../scripts/calibrate.py                        # hit vs false alarm per 
 
 ## Replay (real API calls, costs money)
 
-Needs `data/clips/<id>.mp4` (README) and keys. Fresh clean clips, stored sessions and manifest_v3 are linked in the README. From `backend/`:
+Needs `data/clips/<id>.mp4` and keys (where to get clips, and one stored session: [SETUP.md](SETUP.md)). From `backend/`:
 
 ```
 python -m labbench.replay --clip ../data/clips/12_43.mp4 --protocol ../fixtures/recipe12/protocol.json \

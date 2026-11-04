@@ -1,5 +1,7 @@
 # Lab Bench Copilot
 
+[![tests](https://github.com/amrevr/lab-bench/actions/workflows/tests.yml/badge.svg)](https://github.com/amrevr/lab-bench/actions/workflows/tests.yml)
+
 Watches someone carry out a hands-on procedure and speaks up when a step goes wrong. It learns the procedure from
 its written steps and one expert recording, then watches the novice's video in 3-second windows, ticks steps off,
 asks a quick question when unsure ("Did you add the salt?"), and flags skipped steps, wrong order, wrong
@@ -8,12 +10,16 @@ CaptainCook4D recipes against the dataset's own timed error annotations.
 
 Built for the Meta Global AI Developer Hackathon, Indie track, by team *Your Unified Interpreter Recorder*.
 
+**Organizers and judges:** [docs/SETUP.md](docs/SETUP.md) goes from a 5-second offline check to a self-hosted run.
+Or ask your coding agent (Claude Code, Codex, ...) to *"run the lab-bench tests"*: it picks up
+[the bundled skill](.claude/skills/lab-bench/SKILL.md) through `AGENTS.md`.
+
 ## How it works
 
 ```
 novice video -> chunker: 3 s windows, 0.5 s overlap, 4 keyframes each, several windows in flight
   -> Muse Glimmer 30B (self-hosted, vLLM FP8 on 2x H100, DFlash drafter): keyframes -> JSON events
-       {action, object, target, technique, mishap, confidence}
+       {action, obj, target, technique, issue (mishap), conf}
   -> aligner (deterministic): events vs the procedure's prerequisite graph -> verdicts
        on_track | ask ("Quick check: did you ...?") | flag (skipped, wrong order, wrong item, mishap)
   -> Muse Wonder: rewrites each verdict as a short coaching line, asynchronously (never delays a flag)
@@ -82,16 +88,19 @@ text in the prompt, ensembling runs.
 
 ## Run it
 
+Step by step, with a stored session to try for free: [docs/SETUP.md](docs/SETUP.md).
+
 ```
 python3 -m pip install -r backend/requirements.txt      # pydantic, imageio-ffmpeg
-cd backend && python3 -m unittest discover -s tests     # offline, no API calls
+scripts/check.sh                                        # offline: unit tests, synthetic eval, fixtures
+cd backend
 
 # Glimmer server (2x H100): DFLASH=1 ../cluster/40_serve_glimmer_h100.sh ; GLIMMER_BASE_URL defaults to localhost:8000
 python3 -m labbench.replay --clip ../data/clips/12_41.mp4 --protocol ../fixtures/recipe12/protocol.json \
     --backend glimmer --end 300 --pace realtime --max-spend 0 --finish --out /tmp/12_41.session.json
 mkdir -p ../out && cp /tmp/12_41.session.json ../out/ && cd .. && python3 -m http.server 8765
 # open http://localhost:8765/overlay/?session=/out/12_41.session.json&video=/data/clips/12_41.mp4
-cd backend
+# (then cd backend again for the commands below)
 
 # protocol for any CaptainCook4D recipe, then score sessions
 python3 ../scripts/make_protocol.py --task-graph <graph.json> --step-desc <step_idx_description.json> \
@@ -111,7 +120,9 @@ dataset's error annotations are used only to score, never as pipeline input.
 | `backend/labbench/pipeline/` | `chunker`, `vision` (Glimmer/Spark client), `align` (step tracker and verdicts), `wonder`, `sam` |
 | `backend/labbench/replay.py` | run a clip through the pipeline at real-time or fast pace, write a session |
 | `backend/labbench/eval.py` | timed scorer against CaptainCook4D annotations |
-| `scripts/` | protocol generation, visibility calibration, overlay server |
+| `scripts/` | protocol generation, visibility calibration, overlay server, `check.sh` (offline checks, also run by CI) |
 | `fixtures/recipe*/` | protocols and error annotations for recipes 1, 3, 8, 10, 12, 27 |
 | `overlay/index.html` | coaching overlay (static page reading a session JSON) |
 | `cluster/` | Glimmer serving scripts and benchmarks for the H100 machine |
+| `docs/` | `SETUP.md` (organizer guide), `RUNNING.md` (details), `measurements.md`, `SUBMISSION.md`, `DEMO.md` |
+| `.claude/skills/lab-bench/`, `AGENTS.md` | agent skill: set up, test and demo the repo through any coding agent |
