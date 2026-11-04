@@ -1,15 +1,11 @@
-{
-  "name": "Tomato Mozzarella Salad (CaptainCook4D recipe 12)",
-  "source_clip": "12_5",
-  "steps": [
-    {"id": 125, "label": "Rinse the tomato", "action": "wash", "obj": "tomato"},
-    {"id": 122, "label": "Dry the tomato", "action": "dry", "obj": "tomato"},
-    {"id": 119, "label": "Slice the tomato", "action": "cut", "obj": "tomato", "technique": "slice"},
-    {"id": 120, "label": "Place the slices in a single layer", "action": "place", "obj": "tomato", "target": "plate", "after": [119]},
-    {"id": 124, "label": "Sprinkle the mozzarella", "action": "sprinkle", "obj": "mozzarella", "target": "plate", "group": "seasoning"},
-    {"id": 127, "label": "Garnish with Italian seasoning", "action": "sprinkle", "obj": "italian seasoning", "target": "plate", "group": "seasoning"},
-    {"id": 126, "label": "Season with pepper", "action": "sprinkle", "obj": "pepper", "target": "plate", "group": "seasoning"},
-    {"id": 123, "label": "Season with salt", "action": "sprinkle", "obj": "salt", "target": "plate", "group": "seasoning"},
-    {"id": 121, "label": "Drizzle olive oil", "action": "pour", "obj": "olive oil", "target": "plate"}
-  ]
+{ "name": "Tomato Mozzarella Salad (CaptainCook4D recipe 12)", "source_clip": "12_5", "steps": [
+  { "id": 125, "label": "Rinse the tomato", "action": "wash", "obj": "tomato", "visible": true },
+  { "id": 122, "label": "Dry the tomato", "action": "dry", "obj": "tomato", "visible": true },
+  { "id": 119, "label": "Slice the tomato", "action": "cut", "obj": "tomato", "technique": "slice", "visible": true },
+  { "id": 120, "label": "Place the slices in a single layer", "action": "place", "obj": "tomato", "target": "plate", "after": [ 119 ], "visible": true },
+  { "id": 124, "label": "Sprinkle the mozzarella", "action": "sprinkle", "obj": "mozzarella", "target": "plate", "group": "seasoning", "visible": true },
+  { "id": 127, "label": "Garnish with Italian seasoning", "action": "sprinkle", "obj": "italian seasoning", "target": "plate", "group": "seasoning", "visible": true },
+  { "id": 126, "label": "Season with pepper", "action": "sprinkle", "obj": "pepper", "target": "plate", "group": "seasoning", "visible": false },
+  { "id": 123, "label": "Season with salt", "action": "sprinkle", "obj": "salt", "target": "plate", "group": "seasoning", "visible": true },
+  { "id": 121, "label": "Drizzle olive oil", "action": "pour", "obj": "olive oil", "target": "plate", "visible": true } ]
 }

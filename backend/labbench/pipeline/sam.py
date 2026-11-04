@@ -13,6 +13,7 @@ import pathlib
 import re
 import threading
 import time
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -36,6 +37,8 @@ class Sam(Protocol):
 
 
 class NullSam:
+    frames = 0                   # nothing billed
+
     def track(self, chunk, prompts, t0):
         return []
 
@@ -125,6 +128,27 @@ class MetaSam:
 
         with ThreadPoolExecutor(max(1, len(prompts))) as ex:      # one request per concept, in parallel
             return [t for tracks in ex.map(one, prompts) for t in tracks]
+
+
+class LocalSam:
+    """A self-hosted SAM 3.1 tracking service at `base_url` (POST /track; the service itself is not in this repo): one request per chunk, all prompts."""
+    frames = 0
+
+    def __init__(self, url: str, fps: float = 10.0, stride: int = 2, timeout: float = 120):
+        # stride 2 = track at fps/2: ~1.8x faster per chunk on dsp, same objects found (cluster benchmark 2026-11-01)
+        self.url, self.fps, self.stride, self.timeout = url.rstrip("/"), fps, stride, timeout
+
+    def track(self, chunk, prompts, t0, errors: list[str] | None = None):
+        q = urllib.parse.urlencode({"prompts": ",".join(prompts), "fps": self.fps, "stride": self.stride})
+        req = urllib.request.Request(f"{self.url}/track?{q}", pathlib.Path(chunk).read_bytes(), {"Content-Type": "video/mp4"})
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as r:
+                out = json.load(r)["tracks"]
+        except Exception as x:          # same contract as MetaSam: a failure is reported, not "nothing found"
+            (errors if errors is not None else []).append(f"{','.join(prompts)}: {type(x).__name__}: {x}"[:200])
+            return []
+        return [Track(f"{t['label']}:{t['id']}", t["label"], [(t0 + b[0], *b[1:]) for b in t["boxes"]], conf=t["conf"])
+                for t in out]
 
 
 def iou(a, b) -> float:

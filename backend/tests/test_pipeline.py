@@ -60,7 +60,7 @@ class FalseAlarmControlTests(unittest.TestCase):
     weak_cut = dict(t_start=0, t_end=1, action="cut", obj="tomato", technique="slice", conf=0.9, chunk=[0, 3])
 
     def test_weak_lone_event_is_not_spoken_but_corroborated_one_is(self):
-        place = lambda t, w: dict(t_start=t, t_end=t + 1, action="place", obj="tomato", target="plate", conf=0.6, chunk=[w, w + 3])
+        place = lambda t, w: dict(t_start=t, t_end=t + 1, action="place", obj="tomato", target="plate", conf=0.55, chunk=[w, w + 3])
         cut = dict(t_start=10, t_end=11, action="cut", obj="tomato", technique="slice", conf=0.9, chunk=[10, 13])
         self.assertEqual(_feed([place(0, 0), cut]), [])                                   # one 0.6 window: parked, then dropped
         self.assertEqual(_feed([place(0, 0), cut, place(11.5, 11.5)]), [])                # too far from the first: still lone
@@ -68,13 +68,13 @@ class FalseAlarmControlTests(unittest.TestCase):
         self.assertEqual(_feed([place(0, 0), cut, place(1.5, 1.5)]), [("wrong_order", 2)])    # corroborated later: spoken then
 
     def test_weak_technique_needs_the_same_technique_again(self):
-        cut = lambda t, w, tech: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech, conf=0.6, chunk=[w, w + 3])
+        cut = lambda t, w, tech: dict(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech, conf=0.55, chunk=[w, w + 3])
         strong = {**self.weak_cut, "t_start": 0, "t_end": 1}
         self.assertEqual(_feed([strong, cut(5, 5, "tear"), cut(6.5, 6.5, "slice")]), [])
         self.assertEqual(_feed([strong, cut(5, 5, "tear"), cut(5.5, 5.5, "tear")]), [("wrong_technique", 1)])
 
     def test_parked_skip_is_withdrawn_when_the_step_happens(self):
-        ev = lambda t, a, o, tg=None, c=0.6: dict(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=c, chunk=[t, t + 3])
+        ev = lambda t, a, o, tg=None, c=0.55: dict(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=c, chunk=[t, t + 3])
         ok = [ev(0, "cut", "tomato", c=0.9)]
         later = [ev(10, "sprinkle", "salt", "plate"), ev(20, "sprinkle", "pepper", "plate")]    # weak: step 2 looks skipped, parked
         again = [ev(10.5, "sprinkle", "salt", "plate"), ev(20.5, "sprinkle", "pepper", "plate")]   # corroboration arrives later
@@ -122,7 +122,7 @@ class PrincipledAlignerTests(unittest.TestCase):
         cut = e(0, "cut", "tomato", tech="slice")
         pap = lambda t, c=0.9: e(t, "sprinkle", "paprika", "plate", c=c, w=t)
         self.assertEqual(_feed([cut, pap(10)]), [])
-        self.assertEqual(_feed([cut, pap(10, 0.7), pap(10.5, 0.7)]), [])
+        self.assertEqual(_feed([cut, pap(10, 0.55), pap(10.5, 0.55)]), [])
         self.assertEqual(_feed([cut, pap(10), pap(10.5)]), [("wrong_item", 3)])
 
     def test_unordered_peers_are_no_evidence_of_a_skip(self):
@@ -244,5 +244,151 @@ class KeyframesClipEndTests(unittest.TestCase):
         self.assertEqual([round(t, 2) for t, _ in kf], [9.19, 9.56, 9.94])
 
 
+
+class IssueTests(unittest.TestCase):
+    def test_visible_mishap_is_a_technique_flag_on_that_step_even_when_already_done(self):
+        from labbench.pipeline.align import Aligner
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        mk = lambda t, issue=None, c=0.9: Event(t_start=t, t_end=t + 1, action="fill", obj="milk", target="mug",
+                                                 issue=issue, conf=c, chunk=[t, t + 3])
+        self.assertEqual([v.kind.value for v in al.feed(mk(0))], ["on_track"])
+        self.assertEqual([(v.kind.value, v.step_id) for v in al.feed(mk(5, "spill"))], [("wrong_technique", 1)])
+        self.assertEqual(Aligner(p).feed(mk(0, "none")), Aligner(p).feed(mk(0)))      # "none" is no issue
+
+
+class NounMatchTests(unittest.TestCase):
+    def test_names_match_by_contained_words(self):
+        from labbench.pipeline.align import _same
+        self.assertTrue(_same("tomato slices", "tomato"))
+        self.assertTrue(_same("black pepper", "pepper"))
+        self.assertTrue(_same("Platter", "plate"))
+        self.assertFalse(_same("salt", "pepper"))
+        self.assertFalse(_same("brown sugar", "salt"))
+        self.assertTrue(_same("olive oil", "olives"))   # known limit: a modifier word matches its noun
+
+
+class VisibilityTests(unittest.TestCase):
+    def test_a_step_not_visible_in_the_expert_run_is_never_asked_about(self):
+        from labbench.schema import Protocol
+        steps = [Step(id=1, label="a", action="cut", obj="tomato"), Step(id=2, label="b", action="wipe", obj="knife", visible=False),
+                 Step(id=3, label="c", action="place", obj="tomato", target="plate"), Step(id=4, label="d", action="pour", obj="oil")]
+        al = Aligner(Protocol(name="t", source_clip="t", steps=steps))
+        for t, a, o, tg in ((0, "cut", "tomato", None), (10, "place", "tomato", "plate"), (20, "pour", "oil", None)):
+            al.feed(Event(t_start=t, t_end=t + 1, action=a, obj=o, target=tg, conf=0.9, chunk=[t, t + 3]))
+        al.finish(30)
+        self.assertNotIn(2, [v.step_id for v in al.verdicts if v.mode != "ok"])
+
+
+    def test_a_mishap_and_a_technique_word_on_one_step_are_both_spoken(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="cut", action="cut", obj="tomato", technique="slice")])
+        al = Aligner(p)
+        mk = lambda t, tech, issue=None: Event(t_start=t, t_end=t + 1, action="cut", obj="tomato", technique=tech,
+                                                issue=issue, conf=0.9, chunk=[t, t + 3])
+        al.feed(mk(0, "slice", "spill"))
+        al.feed(mk(5, "dice"))
+        self.assertEqual(sorted(((v.kind.value, v.source or "") for v in al.verdicts if v.mode != "ok")),
+                         [("wrong_technique", ""), ("wrong_technique", "issue")])
+        self.assertEqual(Aligner(p).feed(mk(0, "slice", "n/a")), Aligner(p).feed(mk(0, "slice")))
+
+
+def _ev(t, action, obj, target=None, conf=0.9, **kw):
+    return Event(t_start=t, t_end=t + 1, action=action, obj=obj, target=target, conf=conf, chunk=[t, t + 3], **kw)
+
+
+def _kinds(al):
+    return [(v.kind.value, v.step_id, v.source) for v in al.verdicts if v.mode != "ok"]
+
+
+class ReviewFixTests(unittest.TestCase):
+    def test_alias_verb_is_not_mistaken_for_a_surface_pour(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=88, label="fill milk", action="fill", aliases=["add", "pour"],
+                                                            obj="skimmed milk", target="mug")])
+        al = Aligner(p)
+        self.assertEqual([v.kind.value for v in al.feed(_ev(0, "pour", "milk", "mug"))], ["on_track"])
+        self.assertIn(88, al.done)
+
+    def test_weak_mishap_without_technique_is_confirmed_by_the_same_mishap_again(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        al.feed(_ev(0, "fill", "milk", "mug", 0.55, issue="spill"))
+        al.feed(_ev(1.5, "fill", "milk", "mug", 0.55, issue="spill"))
+        self.assertIn(("wrong_technique", 1, "issue"), _kinds(al))
+
+    def test_weak_mishap_is_not_confirmed_by_a_clean_neighbour(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="cut", action="cut", obj="tomato", technique="slice")])
+        al = Aligner(p)
+        al.feed(_ev(0, "cut", "tomato", None, 0.55, technique="slice", issue="spill"))
+        al.feed(_ev(1.5, "cut", "tomato", None, 0.9, technique="slice"))
+        self.assertNotIn("issue", [k[2] for k in _kinds(al)])
+
+    def test_mishap_goes_to_the_step_under_way_not_an_unready_one(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", partial_order=True, steps=[
+            Step(id=83, label="fill late", action="fill", obj="milk", target="mug", after=[85]),
+            Step(id=85, label="stir", action="stir", obj="mug"),
+            Step(id=88, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        al.feed(_ev(0, "fill", "milk", "mug"))
+        self.assertIn(88, al.done)
+        al.feed(_ev(10, "fill", "milk", "mug", issue="spill"))
+        self.assertEqual([k[:2] for k in _kinds(al) if k[2] == "issue"], [("wrong_technique", 88)])
+
+    def test_mishap_event_does_not_also_say_step_done(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        al = Aligner(p)
+        self.assertEqual([v.kind.value for v in al.feed(_ev(0, "fill", "milk", "mug", issue="spill"))], ["wrong_technique"])
+
+    def test_plural_names_match_their_singular(self):
+        from labbench.pipeline.align import _same
+        self.assertTrue(_same("tomatoes", "tomato"))
+        self.assertTrue(_same("sandwiches", "sandwich"))
+        self.assertTrue(_same("glasses", "glass"))
+
+
+class PairFramesTests(unittest.TestCase):
+    def test_odd_frame_count_keeps_the_last_frame(self):
+        from unittest import mock
+        from labbench.pipeline import chunker
+        fr = lambda n: [(float(i), pathlib.Path(f"f{i}.jpg")) for i in range(n)]
+        with mock.patch.object(chunker, "_run", lambda cmd: None):
+            self.assertEqual([t for t, _ in chunker.pair_frames(fr(3))], [0.0, 2.0])
+            self.assertEqual(chunker.pair_frames(fr(1)), fr(1))
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class GeneralMatchingTests(unittest.TestCase):
+    def _al(self, steps):
+        from labbench.schema import Protocol
+        return Aligner(Protocol(name="t", source_clip="t", steps=steps, partial_order=True))
+
+    def test_a_step_with_its_own_target_is_not_a_container_step(self):
+        al = self._al([Step(id=1, label="lettuce", action="place", obj="lettuce", target="muffin"),
+                       Step(id=2, label="egg", action="place", obj="egg", target="lettuce", after=[1])])
+        st, _ = al._find(Event(t_start=0, t_end=1, action="place", obj="egg", target="microwave", conf=0.9))
+        self.assertNotEqual(st.id if st else None, 1)       # the egg going somewhere is not "place the lettuce"
+
+    def test_placement_verbs_are_alike_when_the_object_matches(self):
+        al = self._al([Step(id=1, label="lettuce", action="place", obj="lettuce", target="muffin")])
+        st, how = al._find(Event(t_start=0, t_end=1, action="add", obj="lettuce", target="muffin", conf=0.9))
+        self.assertEqual((st.id, how), (1, "exact"))
+        st, _ = al._find(Event(t_start=0, t_end=1, action="cut", obj="lettuce", conf=0.9))
+        self.assertIsNone(st)
+
+
+class IssueConfidenceTests(unittest.TestCase):
+    def test_a_moderately_confident_mishap_needs_a_second_window(self):
+        from labbench.schema import Protocol
+        p = Protocol(name="t", source_clip="t", steps=[Step(id=1, label="fill", action="fill", obj="milk", target="mug")])
+        mk = lambda c, t=0: Event(t_start=t, t_end=t + 1, action="fill", obj="milk", target="mug", issue="spill", conf=c, chunk=[t, t + 3])
+        self.assertNotIn("issue", [v.source for v in Aligner(p).feed(mk(0.7))])
+        self.assertIn("issue", [v.source for v in Aligner(p).feed(mk(0.9))])

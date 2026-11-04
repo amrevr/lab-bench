@@ -19,6 +19,6 @@ fi
 setsid nohup "$ENV/bin/vllm" serve RedHatAI/Muse-Glimmer-30B-FP8-block --served-model-name glimmer \
   --host 127.0.0.1 --port 18080 --generation-config auto --tensor-parallel-size 2 \
   --enable-auto-tool-choice --tool-call-parser muse_glimmer --reasoning-parser muse_glimmer \
-  --max-model-len 16384 --limit-mm-per-prompt '{"image":4}' --gpu-memory-utilization "${GPUMEM:-$MEM}" \
+  --max-model-len 16384 --limit-mm-per-prompt "{\"image\":${NIMG:-4}}" --gpu-memory-utilization "${GPUMEM:-$MEM}" \
   "${SPEC[@]}" > "/data/vermar/lab-bench-glimmer/$LOG" 2>&1 &
 echo "started pid $!; ready when the log shows 'Application startup complete' (~2.5 min)"

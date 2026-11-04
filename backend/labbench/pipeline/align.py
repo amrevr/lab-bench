@@ -10,10 +10,15 @@ from ..schema import THRESHOLDS, Event, Evidence, Protocol, Step, Verdict, Verdi
 
 SYNONYMS = {"tray": "plate", "platter": "plate", "dish": "plate"}   # a cutting board is not a serving plate
 ORDER_GAP = 3.0    # s (one chunk): events closer than this in time are not ordered, window timing is that coarse
-STRONG = 0.8       # an event this confident backs a verdict alone; weaker ones need a second window (false asks maxed at 0.72)
+STRONG = 0.6       # an event this confident backs a verdict alone; weaker ones need a second window. 0.6 on all 17 recipe-12 clips (Glimmer): same catches and false alarms as 0.8, warnings up to 5 min earlier; 0.5 adds a false alarm
 MIN_CONF = 0.5     # events below this confidence are ignored for ordering/attempts
 ITEM_NEEDS_REPEAT = True   # an unknown-noun (wrong item) event must also be corroborated
+CONTINUE_GAP = 30.0   # s: an event this soon after a step with the same form is that step continuing
 CORROBORATE_GAP = 1.0   # s: a same action/object event in another window this close (chunks overlap 0.5 s) corroborates
+ISSUE_STRONG = 0.8     # a mishap backs a flag alone only this confident, else the same mishap must be seen again:
+                       # across recipes 1/3/8/10/12 it cuts 33 of 192 false alarms for 8 of 63 strict catches
+NO_ISSUE = {"", "none", "null", "no", "n/a", "na", "nan", "false", "clean", "nothing", "ok", "fine", "no issue"}
+PLACE_LIKE = {"place", "add", "put", "set", "lay", "top", "line", "arrange", "transfer"}   # same move, object decides
 ACTION_SYNONYMS = {"season": "sprinkle", "garnish": "sprinkle", "drizzle": "pour"}
 SPRINKLE_ACTIONS = {"sprinkle", "pour"}   # the obj of these is the ingredient; the vision model often names what it lands on
 SURFACES = {"plate", "board", "cutting board", "tray", "platter", "dish", "bowl", "table", "counter"}
@@ -28,8 +33,30 @@ def _norm(x: str) -> str:
     return SYNONYMS.get(x, x)
 
 
+def _singular(w: str) -> str:
+    """shortcut: -ies is left alone (cookies ~ cookie, berries ~ berry cannot both hold); -oes and sibilant -es are handled."""
+    if len(w) <= 3 or w.endswith("ss"):
+        return w
+    if w.endswith(("oes", "ches", "shes", "xes", "sses")):
+        return w[:-2]
+    return w[:-1] if w.endswith("s") else w
+
+
+def _words(x: str) -> set[str]:
+    return {_singular(w) for w in _norm(x).split()}
+
+
 def _same(a: str | None, b: str | None) -> bool:
-    return bool(a) and bool(b) and _norm(a) == _norm(b)
+    """Same thing: equal, or one name's words contain the other's ("tomato slices" ~ "tomato", "black pepper" ~
+    "pepper"), so generated protocols and the vision model need not word things identically.
+    shortcut: a modifier also matches ("olives" ~ "olive oil"); fine while a recipe has no two such items, else
+    compare head nouns."""
+    if not a or not b:
+        return False
+    if _norm(a) == _norm(b):
+        return True
+    wa, wb = _words(a), _words(b)
+    return wa <= wb or wb <= wa
 
 
 class Aligner:
@@ -46,9 +73,24 @@ class Aligner:
     def __init__(self, protocol: Protocol, thresholds: dict = THRESHOLDS):
         self.thresholds, self._n = thresholds, 0
         self.steps = protocol.steps
-        self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n}
-        self.ingredients = {(s.action, _norm(s.obj)) for s in self.steps}
+        self.names = {_norm(n) for s in self.steps for n in (s.obj, s.target) if n} | {
+            _norm(v["target"]) for s in self.steps for v in s.seen_as if v.get("target")}   # the microwave of 'place -> microwave'
+        self.ingredients = {(a, _norm(s.obj)) for s in self.steps for a in (s.action, *s.aliases)}
         self.pos = {s.id: i for i, s in enumerate(protocol.steps)}   # step ids need not be sorted
+        self.partial = protocol.partial_order
+        self.contents: dict[str, set[str]] = {}    # container -> what steps put into it (a step "on" a container
+        for st in self.steps:                       # covers its contents)
+            if st.target:
+                self.contents.setdefault(_norm(st.target), set()).add(st.obj)
+        self.anc: dict[int, set[int]] = {}         # step -> every step that must come before it (transitive `after`)
+        for st in self.steps:
+            todo, seen = list(st.after), set()
+            while todo:
+                a = todo.pop()
+                if a not in seen and a in self.pos:
+                    seen.add(a)
+                    todo += self.steps[self.pos[a]].after
+            self.anc[st.id] = seen
         self.done: dict[int, tuple[int, Event]] = {}   # step id -> (event idx, event) that attempted it
         self.verdicts: list[Verdict] = []
         self._reported: set[tuple[VerdictKind, int]] = set()
@@ -60,14 +102,15 @@ class Aligner:
         (the tomato, the plate) names the destination: make it the target and leave the ingredient unknown."""
         ev = ev.model_copy(update={"action": ACTION_SYNONYMS.get(ev.action.lower().strip(), ev.action.lower().strip())})
         o = _norm(ev.obj)
-        if ev.action in SPRINKLE_ACTIONS and (ev.action, o) not in self.ingredients and (o in SURFACES or o in self.names):
+        if ev.action in SPRINKLE_ACTIONS and not any(a == ev.action and _same(i, o) for a, i in self.ingredients) and (o in SURFACES or self._known(o)):
             ev.obj, ev.target = "", ev.target or o
         return ev
 
-    def _corroborated(self, ev: Event, same_technique: bool = False) -> bool:
-        """The same action/object (compatible target; same technique if asked) was seen in another window within CORROBORATE_GAP."""
+    def _corroborated(self, ev: Event, same_technique: bool = False, same_issue: bool = False) -> bool:
+        """The same action/object (compatible target; same technique or issue if asked) was seen in another window within CORROBORATE_GAP."""
         return any(o is not ev and _win(o) != _win(ev) and o.action == ev.action and _same(o.obj, ev.obj)
                    and (not same_technique or _same(o.technique, ev.technique))
+                   and (not same_issue or _same(o.issue, ev.issue))
                    and (o.target is None or ev.target is None or _same(o.target, ev.target))
                    and max(o.t_start - ev.t_end, ev.t_start - o.t_end) <= CORROBORATE_GAP for o in self.seen)
 
@@ -83,8 +126,15 @@ class Aligner:
         a place the recipe never mentions (fridge, cutting board) means this is some other action."""
         if not ev.obj:
             return None, "none"
-        cands = [s for s in self.steps if (ev.target is None or s.target is None or _norm(ev.target) in self.names)
-                 and s.action == ev.action and _same(s.obj, ev.obj) and s.id not in self.done]
+        cands = [s for s in self.steps if (ev.target is None or s.target is None or self._known(ev.target))
+                 and self._is(s, ev) and s.id not in self.done]
+        if cands and self.partial:     # repeated forms (heat ~ microwave): a step whose prerequisites are done first,
+            ready = [c for c in cands if all(a in self.done for a in c.after)]
+            if not ready and any(self._is(d, ev) and ev.t_start - e.t_end <= CONTINUE_GAP   # else it is the step
+                                 for d, (_, e) in ((d, self.done[d]) for d in self.done      # just done, continuing
+                                                   if d in self.pos) for d in [self.steps[self.pos[d]]]):
+                return None, "none"
+            cands = ready or cands
         if cands:
             s = next((c for c in cands if _same(c.target, ev.target)), cands[0])
             if s.technique and ev.technique and not _same(s.technique, ev.technique):
@@ -92,53 +142,87 @@ class Aligner:
             return s, "exact"
         # An attempted step is judged again for technique: the first event is often the setup, the method shows later.
         for s in self.steps:
-            if s.id in self.done and s.technique and ev.technique and s.action == ev.action and _same(s.obj, ev.obj) \
+            if s.id in self.done and s.technique and ev.technique and self._is(s, ev) \
                     and not _same(s.technique, ev.technique):
                 return s, "technique"
         # Same action, same destination, different object -> wrong item for the next such step.
         for s in self.steps:
-            if s.action == ev.action and not _same(s.obj, ev.obj) and s.id not in self.done and (
+            if self._act(s, ev.action) and not self._obj(s, ev) and s.id not in self.done and (
                 s.target is None or _same(s.target, ev.target)
-            ) and _norm(ev.obj) not in self.names:     # a protocol object in another role is not a wrong item
+            ) and not self._known(ev.obj):     # a protocol object in another role is not a wrong item
                 return s, "item"
         return None, "none"
 
-    def _backed(self, kind: VerdictKind, ev: Event) -> bool:
-        """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict) in another window."""
+    def _act(self, s: Step, action: str) -> bool:
+        if action == s.action or action in s.aliases:
+            return True
+        return action in PLACE_LIKE and bool({s.action, *s.aliases} & PLACE_LIKE)   # put / add / place ... alike
+
+    def _obj(self, s: Step, ev: Event) -> bool:
+        """The event's object is the step's, or the step acts on a container (mix the mug) and the event names the
+        container as target or anything the recipe puts into it (mix the milk)."""
+        if _same(s.obj, ev.obj):
+            return True
+        inside = self.contents.get(_norm(s.obj)) if not s.target else None   # mix / heat the mug, not "place the lettuce"
+        return bool(inside) and (_same(ev.target, s.obj) or any(_same(ev.obj, i) for i in inside))
+
+    def _is(self, s: Step, ev: Event) -> bool:
+        looks = self._act(s, ev.action) or any(
+            v.get("action") == ev.action and (not v.get("target") or _same(ev.target, v["target"])) for v in s.seen_as)
+        return looks and self._obj(s, ev)
+
+    def _known(self, x: str) -> bool:
+        """A name the recipe itself uses (as any step's object or target), matched leniently like _same."""
+        return any(_same(x, n) for n in self.names)
+
+    def _follows(self, d: int, s: int) -> bool:
+        """Must step d come after step s? A partial-order protocol answers from its prerequisite graph; a hand-written
+        list answers by position, except within a group (steps that may be done in any order)."""
+        if self.partial:
+            return s in self.anc[d]
+        sd, ss = self.steps[self.pos[d]], self.steps[self.pos[s]]
+        return self.pos[d] > self.pos[s] and not (ss.group and ss.group == sd.group)
+
+    def _backed(self, kind: VerdictKind, ev: Event, source: str | None = None) -> bool:
+        """Strong, or seen again (same action/object, compatible target, same technique for a technique verdict, same
+        issue for a mishap) in another window."""
+        if source == "issue":
+            return ev.conf >= ISSUE_STRONG or self._corroborated(ev, same_issue=True)
         return ev.conf >= STRONG or self._corroborated(ev, kind == VerdictKind.WRONG_TECHNIQUE)
 
     def _emit(self, t: float, kind: VerdictKind, sid: int, msg: tuple[str, str], contrib: list[tuple[int, Event]],
-              conf: float | None = None, gated: bool = True) -> Verdict | None:
+              conf: float | None = None, gated: bool = True, source: str | None = None) -> Verdict | None:
         """msg: (statement for a flag, confirming question for an ask).
         contrib: (event_idx, event) pairs behind the verdict; conf defaults to their minimum.
 
         A verdict resting on a weak event nobody corroborates yet is parked, not spoken (_release)."""
-        if (kind, sid) in self._reported:
+        key = (kind, sid, source)          # a mishap and a technique word on one step are separate findings
+        if key in self._reported:
             return None
-        if gated and not all(self._backed(kind, e) for _, e in contrib):
-            self.parked[(kind, sid)] = (kind, sid, msg, contrib, conf)
+        if gated and not all(self._backed(kind, e, source) for _, e in contrib):
+            self.parked[key] = (kind, sid, msg, contrib, conf, source)
             return None
         conf = min(e.conf for _, e in contrib) if conf is None else conf
         ev = [Evidence(clip=e.clip, t_start=e.t_start, t_end=e.t_end, frame_t=e.frame_refs, event_idx=i)
               for i, e in contrib]
         mode = mode_for(kind, conf, self.thresholds)
         v = Verdict(t=t, step_id=sid, kind=kind, conf=round(conf, 2), mode=mode,
-                    message=msg[mode == "ask"], evidence=ev)
+                    message=msg[mode == "ask"], evidence=ev, source=source)
         if v.mode == "ok" and kind != VerdictKind.ON_TRACK:
             return None
-        self._reported.add((kind, sid))
+        self._reported.add(key)
         self.verdicts.append(v)
         return v
 
     def _release(self, t: float) -> list[Verdict]:
         """Speak parked verdicts whose evidence is now corroborated; withdraw skips of steps that have since happened."""
         out = []
-        for key, (kind, sid, msg, contrib, conf) in list(self.parked.items()):
+        for key, (kind, sid, msg, contrib, conf, source) in list(self.parked.items()):
             if kind == VerdictKind.SKIPPED and sid in self.done:
                 del self.parked[key]
-            elif all(self._backed(kind, e) for _, e in contrib):
+            elif all(self._backed(kind, e, source) for _, e in contrib):
                 del self.parked[key]
-                out.append(self._emit(t, kind, sid, msg, contrib, conf, gated=False))
+                out.append(self._emit(t, kind, sid, msg, contrib, conf, gated=False, source=source))
         return [v for v in out if v]
 
     def feed(self, ev: Event) -> list[Verdict]:
@@ -147,9 +231,29 @@ class Aligner:
         self.seen.append(ev)
         return self._feed(ev) + self._release(ev.t_end)
 
+    def _issue(self, ev: Event, cur) -> list[Verdict]:
+        """A visible mishap (spill, pile-up, ...) is a technique error on the step being done, even one already done."""
+        if not ev.issue or ev.issue.strip().lower() in NO_ISSUE or ev.conf < MIN_CONF:
+            return []
+        cands = [s for s in self.steps if self._is(s, ev)]
+        undone = [c for c in cands if c.id not in self.done]
+        done = sorted((c for c in cands if c.id in self.done), key=lambda c: self.done[c.id][1].t_end)
+        ready = [c for c in undone if all(a in self.done for a in c.after)]
+        s = ready[0] if ready else (done[-1] if done else (undone[0] if undone else None))   # the step under way, else the one done last
+        if s is None:
+            return []
+        v = self._emit(ev.t_end, VerdictKind.WRONG_TECHNIQUE, s.id,
+                       (f"Step {s.id} ('{s.label}'): that looked like a {ev.issue}.",
+                        f"Step {s.id} ('{s.label}'): was there a {ev.issue}?"), [cur], source="issue")
+        return [v] if v else []
+
     def _feed(self, ev: Event) -> list[Verdict]:
         cur = (self._n, ev)
         self._n += 1
+        spoke = self._issue(ev, cur)
+        return spoke + self._feed_step(ev, cur, bool(spoke))
+
+    def _feed_step(self, ev: Event, cur, spoke: bool = False) -> list[Verdict]:   # spoke: a mishap was just flagged
         step, how = self._find(ev)
         if step is None or not self._consistent(step, ev):
             return []
@@ -174,8 +278,7 @@ class Aligner:
             if step.id not in self.done:   # a step done before its prerequisite was only an earlier, different action: not this step
                 for d in [d for d in self.done if step.id in self.steps[self.pos[d]].after]:
                     del self.done[d]
-            later = sorted((d for d in self.done if self.pos[d] > self.pos[step.id]
-                            and not (step.group and step.group == self.steps[self.pos[d]].group)
+            later = sorted((d for d in self.done if self._follows(d, step.id)
                             and ev.t_start - self.done[d][1].t_end >= ORDER_GAP), key=self.pos.get)
             if later:
                 first = next(s for s in self.steps if s.id == later[0])
@@ -187,13 +290,12 @@ class Aligner:
             fresh = step.id not in self.done
             self.done.setdefault(step.id, cur)
             for m in self.steps:
-                if self.pos[m.id] < self.pos[step.id] and m.id not in self.done and not m.optional:
-                    after = [c for d, c in self.done.items() if self.pos[d] > self.pos[m.id]
-                             and not (m.group and m.group == self.steps[self.pos[d]].group)]   # an unordered peer is no evidence
+                if self._follows(step.id, m.id) and m.id not in self.done and not m.optional and m.visible:
+                    after = [c for d, c in self.done.items() if self._follows(d, m.id)]   # an unordered peer is no evidence
                     if len(after) >= self.SKIP_AFTER:
                         out.append(self._emit(t, VerdictKind.SKIPPED, m.id,
                             (f"Step {m.id} ('{m.label}') looks skipped.", f"Did you do '{m.label}' (step {m.id})?"), after))
-            if how == "exact" and fresh and ready and not any(out):
+            if how == "exact" and fresh and ready and not spoke and not any(out):
                 out.append(self._emit(t, VerdictKind.ON_TRACK, step.id, (f"Step {step.id} ('{step.label}') done.",) * 2, [cur]))
         return [v for v in out if v]
 
@@ -206,7 +308,7 @@ class Aligner:
         conf = min((e.conf for _, e in seen), default=0.5)
         out = []
         for s in self.steps:
-            if s.id not in self.done and not s.optional:
+            if s.id not in self.done and not s.optional and s.visible:
                 out.append(self._emit(t_end, VerdictKind.SKIPPED, s.id,
                     (f"Step {s.id} ('{s.label}') was never done.", f"Did you do '{s.label}' (step {s.id})?"), seen[-1:], conf, gated=False))
         return [v for v in out if v]

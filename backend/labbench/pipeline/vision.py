@@ -27,13 +27,40 @@ BACKENDS = {
 }
 BACKOFF = 1.5     # seconds before the retry of a failed request
 
+DEFAULT_ACTIONS = ("wash", "dry", "cut", "place", "pour", "sprinkle", "mix", "pick")
+GENERIC_ACTIONS = ("pick", "place", "mix")      # always allowed: handling that is not itself a protocol step
 SYSTEM = (
     "You watch short cooking-bench clips as keyframes plus object-track summaries. Reply with ONLY a "
     "JSON array of events: {t_start,t_end,action,obj,target,technique,conf}. action is one of "
-    "wash,dry,cut,place,pour,sprinkle,mix,pick. Use lowercase nouns. obj is the food being handled (tomato, "
+    "{actions}. Use lowercase nouns. obj is the food being handled (tomato, "
     "not the paper towel or the hands); technique is the method (slice, dice, tear), never the tool. conf in 0..1; lower it when unsure. "
     "Return [] if nothing is happening."
 )
+
+
+ISSUES = (" Also give each event an issue field: a visible mishap in how the action was done (spill, drop, overflow,"
+          " pile-up, mess, too much), or null when it was done cleanly. Report only what the keyframes show.")
+TECH_DEFS = (" Technique, by what the pieces look like: slice = flat rounds of even thickness; dice = small cubes;"
+             " chop = rough irregular pieces; wedge = wedges cut through the core; tear = torn by hand.")
+HONEST = " The person may skip, repeat or reorder steps: report only what the keyframes show."
+
+
+def prompt_extra(style: str, steps) -> str:
+    """Prompt variants under test: full (labels + techniques, ordered), steps (ordered action/object, no technique),
+    vocab (unordered action/object), techdefs (technique definitions only), steps+techdefs."""
+    pair = lambda st: f"{st.action} {st.obj}" + (f" on {st.target}" if st.target else "")
+    if style == "full":
+        return (" The procedure, in the expert's order: " + "; ".join(
+            f"{i}. {st.label} ({pair(st)}{', ' + st.technique if st.technique else ''})" for i, st in enumerate(steps, 1))
+            + "." + HONEST + " Never report a step just because it should come next.")
+    out = ""
+    if style.startswith("steps"):
+        out += " The steps of this procedure, in the expert's order: " + "; ".join(f"{i}. {pair(st)}" for i, st in enumerate(steps, 1)) + "." + HONEST
+    if style == "vocab":
+        out += " Actions that occur in this procedure, in any order: " + "; ".join(sorted({pair(st) for st in steps})) + "." + HONEST
+    if style.endswith("techdefs"):
+        out += TECH_DEFS
+    return out
 
 
 class VisionError(Exception):
@@ -74,13 +101,19 @@ def summarize(tracks: list[Track]) -> str:
 
 class Vision:
     def __init__(self, backend: str | None = None, base_url: str | None = None, api_key: str | None = None,
-                 model: str | None = None, names: list[str] = ()):
+                 model: str | None = None, names: list[str] = (), steps: list = (), style: str = "", issues: bool = False, paired: bool = False,
+                 timeout: float = 60):
         backend = backend or os.environ.get("VISION_BACKEND", "glimmer")
         url, name, key_env = BACKENDS[backend]
         self.backend = backend
         self.base_url = (base_url or url).rstrip("/")
         self.model = model or name
-        self.system = SYSTEM + (f" Use these names where they fit: {', '.join(names)}." if names else "")
+        self.paired = paired
+        self.timeout = timeout    # live: 60 s; offline accuracy runs on a loaded GPU: longer, so no window is dropped
+        acts = list(dict.fromkeys([st.action for st in steps] + list(GENERIC_ACTIONS))) if steps else DEFAULT_ACTIONS
+        self.system = SYSTEM.replace("{actions}", ",".join(acts)) + (ISSUES if issues else "") + (
+            f" Use these names where they fit: {', '.join(names)}." if names else "")
+        self.system += prompt_extra(style, steps)
         self.api_key = api_key or os.environ.get(key_env, "")
 
     def _chat(self, messages: list[dict], max_tokens: int = 600) -> str:
@@ -94,7 +127,7 @@ class Vision:
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         req = urllib.request.Request(f"{self.base_url}/chat/completions", body, headers)
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
             try:
                 choice = json.load(r)["choices"][0]
             except (KeyError, IndexError, TypeError) as x:     # 200 with an error body or no choices
@@ -106,7 +139,9 @@ class Vision:
     def events(self, keyframes: list[tuple[float, pathlib.Path]], tracks: list[Track],
                t0: float, t1: float, clip: str | None = None) -> list[Event]:
         content = [{"type": "text", "text": f"Clip window {t0:.1f}-{t1:.1f}s. Tracks: {summarize(tracks) or 'none'}. "
-                                            "Keyframes follow with their timestamps."}]
+                                            "Keyframes follow with their timestamps." + (
+                        " Each image shows two consecutive moments side by side (left, then right a fraction of a"
+                        " second later)." if self.paired else "")}]
         for t, p in keyframes:
             b64 = base64.b64encode(p.read_bytes()).decode()
             content += [{"type": "text", "text": f"t={t:.1f}s"},

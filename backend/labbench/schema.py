@@ -26,6 +26,7 @@ class Event(BaseModel):
     obj: str                         # ingredient or tool acted on
     target: Optional[str] = None     # destination (plate, bowl, ...)
     technique: Optional[str] = None  # slice, tear, saw, ...
+    issue: Optional[str] = None      # a visible mishap in how it was done: spill, drop, overflow, pile-up
     conf: float = Field(ge=0, le=1, default=0.8)       # the vision model's confidence
     sam_conf: Optional[float] = None                   # SAM detection confidence, kept separate
     track_ids: list[str] = []        # cross-chunk track ids (see sam.link_tracks)
@@ -42,10 +43,13 @@ class Step(BaseModel):
     qty: Optional[str] = None        # "1/2 in", "1/4 tsp"; not visible to the pipeline, shown only
     source_frames: list[float] = []  # expert-clip timestamps (s)
     action: str
+    aliases: list[str] = []          # other verbs a viewer may use for this action (fill: pour, add)
+    seen_as: list[dict] = []         # other ways it looks on camera: {action, target} (microwave: place -> microwave)
     obj: str
     target: Optional[str] = None
     technique: Optional[str] = None
     optional: bool = False
+    visible: bool = True             # False: never recognized in the expert run, so never asked about as skipped
     group: Optional[str] = None      # steps sharing a group may be done in any order (e.g. seasonings)
     after: list[int] = []            # step ids that must have been attempted first; an event earlier than that is not this step
 
@@ -61,6 +65,7 @@ class Protocol(BaseModel):
     name: str
     source_clip: str
     steps: list[Step]
+    partial_order: bool = False      # True: `after` is the full prerequisite graph (generated protocols); order = reachability
 
 
 class VerdictKind(str, Enum):
@@ -81,6 +86,7 @@ class Evidence(BaseModel):
 
 class Verdict(BaseModel):
     t: float                         # when the coach speaks (clip time, s)
+    source: Optional[str] = None     # "issue": raised from a reported mishap, not a technique word
     step_id: int
     kind: VerdictKind
     conf: float

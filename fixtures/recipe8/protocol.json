@@ -1,0 +1,11 @@
+{ "name": "Spiced Hot Chocolate (CaptainCook4D recipe 8, generated)", "source_clip": "8_15", "partial_order": true, "steps": [
+  { "id": 88, "label": "Fill mug with skimmed milk", "recipe_text": "Fill-Fill a microwave-safe mug with skimmed milk", "action": "fill", "aliases": [ "add", "pour" ], "obj": "skimmed milk", "target": "mug", "visible": true },
+  { "id": 89, "label": "Microwave mug contents", "recipe_text": "Microwave-Microwave the contents of the mug for 1 minute", "action": "microwave", "aliases": [ "heat", "warm" ], "seen_as": [
+    { "action": "place", "target": "microwave" } ], "obj": "mug", "after": [ 88 ], "visible": true },
+  { "id": 87, "label": "Add sugar to mug", "recipe_text": "Add-Add 1 teaspoon of white sugar to the mug", "action": "add", "aliases": [ "pour", "sprinkle" ], "obj": "white sugar", "target": "mug", "after": [ 89 ], "visible": true },
+  { "id": 90, "label": "Add chocolate to mug", "recipe_text": "Add-Add 2 pieces of chocolate to the mug", "action": "add", "aliases": [ "drop", "place" ], "obj": "chocolate", "target": "mug", "after": [ 89 ], "visible": true },
+  { "id": 84, "label": "Add cinnamon to mug", "recipe_text": "Add-Add 1/5 teaspoon cinnamon to the mug", "action": "add", "aliases": [ "pour", "sprinkle" ], "obj": "cinnamon", "target": "mug", "after": [ 89 ], "visible": true },
+  { "id": 85, "label": "Mix mug contents", "recipe_text": "Mix-Mix the contents of the mug", "action": "mix", "aliases": [ "blend", "stir" ], "obj": "mug", "after": [ 84, 87, 90 ], "visible": true },
+  { "id": 83, "label": "Heat mug contents and serve", "recipe_text": "Heat-Heat the contents of the mug for 1 minute and serve", "action": "heat", "aliases": [ "microwave", "warm" ], "obj": "mug", "after": [ 85 ], "seen_as": [
+    { "action": "place", "target": "microwave" } ], "visible": true } ]
+}

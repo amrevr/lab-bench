@@ -1,0 +1,1608 @@
+[
+{
+"recording_id": "3_2",
+"activity_id": 3,
+"is_error": false,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 5.714685807915059,
+"end_time": 12.699301795366807
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 50.16224209169884,
+"end_time": 113.65875106853282
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 118.73847178667954,
+"end_time": 137.15245938996142
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 144.1370753774131,
+"end_time": 166.36085351930504
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 173.34546950675676,
+"end_time": 209.53847962355215
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 214.61820034169887,
+"end_time": 226.04757195752896
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 230.4923275859074,
+"end_time": 260.3356868050193
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 274.3049187799228,
+"end_time": 297.79862710135137
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 339.70632302606174,
+"end_time": 389.8685651177606
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 407.01262254150583,
+"end_time": 435.5860515810811
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 434.31612140154436,
+"end_time": 443.8405977480695
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 454.00003918436295,
+"end_time": 480.66857295463325
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 487.0182238523166,
+"end_time": 499.08256055791514
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 504.16228127606183,
+"end_time": 649.5692868330116
+}
+]
+},
+{
+"recording_id": "3_5",
+"activity_id": 3,
+"is_error": false,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 2.220446049250313e-16,
+"end_time": 8.432652031853284
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 14.616596855212356,
+"end_time": 55.09332660810811
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 63.52597863996139,
+"end_time": 77.58039869305018
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 89.94828833976834,
+"end_time": 115.2462444353282
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 132.11154849903477,
+"end_time": 174.83698546042473
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 179.89657667953668,
+"end_time": 200.6971183581081
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 206.88106318146717,
+"end_time": 245.67126252799227
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 250.1686769449807,
+"end_time": 269.2826882171815
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 276.0288098426641,
+"end_time": 322.6894844189189
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 344.05220289961386,
+"end_time": 372.72321980791503
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 379.4693414333977,
+"end_time": 395.77246869498066
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 413.1999495608108,
+"end_time": 432.31396083301155
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 447.4927344903475,
+"end_time": 458.73627053281854
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 466.04456896042467,
+"end_time": 573.4203381660232
+}
+]
+},
+{
+"recording_id": "3_11",
+"activity_id": 3,
+"is_error": false,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 4.625,
+"end_time": 11.087
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 14.666,
+"end_time": 85.625
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 90.236,
+"end_time": 122.426
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 130.15,
+"end_time": 164.684
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 184.611,
+"end_time": 197.128
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 169.5,
+"end_time": 177.77100000000002
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 223.272,
+"end_time": 259.927
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 263.716,
+"end_time": 286.122
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 293.725,
+"end_time": 359.80899999999997
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 367.779,
+"end_time": 405.25
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 407.58,
+"end_time": 432.585
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 443.776,
+"end_time": 475.658
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 478.032,
+"end_time": 489.704
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 494.062,
+"end_time": 594.2909999999999
+}
+]
+},
+{
+"recording_id": "3_12",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 3.185292794401544,
+"end_time": 11.467054059845566
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 35.03822073841699,
+"end_time": 61.15762165250966
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 80.2693784189189,
+"end_time": 152.2569955723938
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 165.6352253088803,
+"end_time": 183.47286495752894
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 208.318148753861,
+"end_time": 225.51872984362936
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 235.074608226834,
+"end_time": 256.0975406698842
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 258.6457749054054,
+"end_time": 283.4910587017375
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 291.7728199671814,
+"end_time": 312.7957524102316
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 314.06986952799224,
+"end_time": 366.30867135617757
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 382.2351353281854,
+"end_time": 426.8292344498069
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 426.19217589092665,
+"end_time": 437.02217139189185
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 452.3115768050193,
+"end_time": 501.3650858388031
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 504.5503786332046,
+"end_time": 515.3803741341699
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"errors": [
+{
+"tag": "Other",
+"description": "Rose above the brim"
+}
+],
+"start_time": 516.6544912519305,
+"end_time": 645.9773787046331,
+"modified_description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling"
+}
+]
+},
+{
+"recording_id": "3_13",
+"activity_id": 3,
+"is_error": false,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 16.19429910521235,
+"end_time": 51.1398919111969
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 74.15284327123553,
+"end_time": 155.97667032915058
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 164.4999856476834,
+"end_time": 189.21760007142854
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 228.42485053667951,
+"end_time": 265.07510640637065
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 267.6321010019305,
+"end_time": 310.2486775945946
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 323.8859821042471,
+"end_time": 337.5232866138996
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 360.53623797393817,
+"end_time": 399.7434884391891
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 411.6761298851351,
+"end_time": 434.6890812451738
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 438.95073890444013,
+"end_time": 507.13726145270266
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 565.0958056187259,
+"end_time": 577.0284470646719
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 576.1761155328185,
+"end_time": 590.6657515743242
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 600.0413984247105,
+"end_time": 660.5569371862935
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 672.4895786322394,
+"end_time": 703.1735137789575
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 713.4014921611969,
+"end_time": 861.707178703668
+}
+]
+},
+{
+"recording_id": "3_14",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 4.207,
+"end_time": 19.438
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 19.438,
+"end_time": 83.418
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 83.418,
+"end_time": 98.30199999999999
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 103.291,
+"end_time": 115.49600000000001
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 117.298,
+"end_time": 160.584
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 173.202,
+"end_time": 194.643
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 197.032,
+"end_time": 224.801
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 229.934,
+"end_time": 276.133
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"errors": [
+{
+"tag": "Missing Step",
+"description": "Skipped this step"
+}
+],
+"start_time": -1.0,
+"end_time": -1.0,
+"modified_description": "Skipped this step"
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 281.266,
+"end_time": 334.275
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 334.275,
+"end_time": 344.457
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 371.75,
+"end_time": 426.995
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 435.5,
+"end_time": 451.217
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 452.25,
+"end_time": 598.723
+}
+]
+},
+{
+"recording_id": "3_18",
+"activity_id": 3,
+"is_error": false,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 7.3723585559845555,
+"end_time": 129.01627472972973
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 174.17197088513512,
+"end_time": 215.64148776254825
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 216.56303258204633,
+"end_time": 249.7386460839768
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 255.26791500096525,
+"end_time": 328.06995574131275
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 333.5992246583012,
+"end_time": 351.1085762287645
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 369.5394726187259,
+"end_time": 398.107362023166
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 427.59679624710424,
+"end_time": 480.12485095849416
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 483.8110302364865,
+"end_time": 516.9866437384169
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 519.7512781969112,
+"end_time": 587.0240500202702
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 626.6504772586873,
+"end_time": 668.1199941361003
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 671.8061734140927,
+"end_time": 715.118779930502
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 728.941952222973,
+"end_time": 782.3915517538609
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 790.6854551293436,
+"end_time": 833.9980616457528
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 833.9980616457528,
+"end_time": 941.8188055270269
+}
+]
+},
+{
+"recording_id": "3_22",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 8.615073648648648,
+"end_time": 24.887990540540542
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 89.0224277027027,
+"end_time": 134.9694871621622
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 152.19963445945947,
+"end_time": 196.23223310810812
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 200.06115472972974,
+"end_time": 228.7780668918919
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"start_time": 232.60698851351353,
+"end_time": 336.9451027027027
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 358.0041716216216,
+"end_time": 408.73738310810813
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 409.6946135135135,
+"end_time": 440.3259864864865
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 446.06936891891894,
+"end_time": 501.58873243243244
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"start_time": 515.9471885135135,
+"end_time": 625.0714547297298
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 636.5582195945946,
+"end_time": 729.4095689189189
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 732.2812601351352,
+"end_time": 770.5704763513514
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 787.8006236486486,
+"end_time": 828.0043006756756
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"errors": [
+{
+"tag": "Missing Step",
+"description": "Skipped this step"
+}
+],
+"start_time": -1.0,
+"end_time": -1.0,
+"modified_description": "Skipped this step"
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"start_time": 871.0796689189189,
+"end_time": 984.0328567567567
+}
+]
+},
+{
+"recording_id": "3_34",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 10.111645945945945,
+"end_time": 21.90856621621622
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 23.59384054054054,
+"end_time": 72.46679594594595
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before adding ingredients to the mug"
+}
+],
+"start_time": 72.46679594594595,
+"end_time": 85.94899054054054
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"start_time": 95.4988783783784,
+"end_time": 123.5867837837838
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 125.27205810810811,
+"end_time": 159.5393027027027
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before adding flour to the mug"
+}
+],
+"start_time": 172.4597391891892,
+"end_time": 205.60346756756758
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before adding flour to the mug"
+}
+],
+"start_time": 215.15335540540542,
+"end_time": 256.7234554054054
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before adding flour to the mug"
+}
+],
+"start_time": 257.8469716216216,
+"end_time": 280.31729594594594
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 292.67597432432433,
+"end_time": 327.50497702702705
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding milk and olive oil to the mug"
+}
+],
+"start_time": 337.05486486486484,
+"end_time": 407.83638648648656
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 434.2390175675676,
+"end_time": 471.8768108108108
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before correct order"
+}
+],
+"start_time": 474.12384324324324,
+"end_time": 574.6785445945945
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"errors": [
+{
+"tag": "Missing Step",
+"description": "Skipped this step"
+}
+],
+"start_time": -1.0,
+"end_time": -1.0,
+"modified_description": "Skipped this step"
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"errors": [
+{
+"tag": "Missing Step",
+"description": "Skipped this step"
+}
+],
+"start_time": -1.0,
+"end_time": -1.0,
+"modified_description": "Skipped this step"
+}
+]
+},
+{
+"recording_id": "3_36",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 1.8271148648648645,
+"end_time": 21.01182094594595
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Add vegetable oil instead of olive oil"
+},
+{
+"tag": "Order Error",
+"description": "Step performed before adding flour, baking powder, salt, and baking soda"
+}
+],
+"start_time": 58.46767567567568,
+"end_time": 89.5286283783784,
+"modified_description": "Add-1 tablespoon of vegetable oil to the mug"
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add only 3 tablespoons instead of 4 tablespoons"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after adding oil to the mug"
+}
+],
+"start_time": 107.79977702702703,
+"end_time": 174.48946959459462,
+"modified_description": "add-Measure 3 tablespoons of flour and add it to the mug"
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "add baking soda instead of baking powder"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after adding oil to the mug"
+}
+],
+"start_time": 180.8843716216216,
+"end_time": 248.48762162162166,
+"modified_description": "add-Measure 1/8 teaspoon of baking soda and add it to the mug"
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"errors": [
+{
+"tag": "Technique Error",
+"description": "spill some out"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after adding oil to the mug and before adding salt"
+}
+],
+"start_time": 254.88252364864863,
+"end_time": 295.99260810810813,
+"modified_description": "Stir-Stir the contents in the mug well and spill some outside"
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "4 tbsp instead of 3 tbsp"
+},
+{
+"tag": "Order Error",
+"description": "Step performed before adding salt"
+}
+],
+"start_time": 300.5603952702703,
+"end_time": 380.03989189189195,
+"modified_description": "Add-Add in 4 tablespoons of milk to the mug"
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding milk and olive oil"
+}
+],
+"start_time": 383.69412162162166,
+"end_time": 433.9397804054055
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before adding baking soda"
+}
+],
+"start_time": 436.6804527027027,
+"end_time": 524.3819662162163
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding milk and olive oil"
+}
+],
+"start_time": 528.9497533783784,
+"end_time": 560.9242635135136
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "Take 2 tablespoons instead of 1 tablespoon"
+}
+],
+"start_time": 576,
+"end_time": 607
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 608,
+"end_time": 611
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "Take 2 tablespoons instead of 1 tablespoon"
+}
+],
+"start_time": 611,
+"end_time": 613
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"start_time": 612,
+"end_time": 638.5766452702703
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 651.3664493243243,
+"end_time": 687.9087466216216
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 690.649418918919,
+"end_time": 715.3154695945947
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"errors": [
+{
+"tag": "Timing Error",
+"description": "Microwave for 3 minutes instead of 1 minute 20 seconds"
+}
+],
+"start_time": 716.2290270270271,
+"end_time": 944.6183851351351,
+"modified_description": "Microwave-Microwave for 3 minute, or until it rises and the toppings are bubbling"
+}
+]
+},
+{
+"recording_id": "3_46",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Use a soiled mug"
+}
+],
+"start_time": 10.053479724903475,
+"end_time": 19.43672746814672,
+"modified_description": "Take-Take a microwavable mug which is soiled and not clean"
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add-Measure 1 teaspoon of baking soda and add it to the mug instead of 1/16 teaspoon"
+}
+],
+"start_time": 22.117655394787644,
+"end_time": 74.39574996428571,
+"modified_description": "add-Measure 1 teaspoon of baking soda and add it to the mug"
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"start_time": 77.07667789092663,
+"end_time": 136.057092277027
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add only 2 tbsp of flours instead of 4 tbsp of flour."
+},
+{
+"tag": "Technique Error",
+"description": "spill while adding and add only 2 tbsp instead of 4tbsp"
+}
+],
+"start_time": 144.0998760569498,
+"end_time": 174.26031523166023,
+"modified_description": "add-Measure 2 tablespoons of flour and add it to the mug"
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add 1 tsp instead of 1/8 tsp"
+}
+],
+"start_time": 183.64356297490346,
+"end_time": 208.44214629633203,
+"modified_description": "add-Measure 1/8 teaspoon of salt and add it to the mug"
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "use hand instead of utensil to stir"
+}
+],
+"start_time": 208.44214629633203,
+"end_time": 229.8895697094595,
+"modified_description": "Stir-Stir the contents in the mug improperly with hand"
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"errors": [
+{
+"tag": "Technique Error",
+"description": "invert tablespoon and use it"
+}
+],
+"start_time": 231.2300336727799,
+"end_time": 254.0179210492278,
+"modified_description": "Add-1 tablespoon of olive oil to the mug and invert tablespoon to measure"
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"start_time": 263.40116879247097,
+"end_time": 302.2746237287644
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before mixing the contents of the mug and spreading sauce"
+}
+],
+"start_time": 322.3815831785714,
+"end_time": 350.5313264083012
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"start_time": 401.46895701447875,
+"end_time": 437.6614840241312
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"errors": [
+{
+"tag": "Technique Error",
+"description": "Mix the marinara sauce completely instead of spreading"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after adding italian herbs"
+}
+],
+"start_time": 436.3210200608108,
+"end_time": 448.385195730695,
+"modified_description": "spread-mix marinara sauce with the batter batter"
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"start_time": 478.5456349054054,
+"end_time": 508.0358420984556
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after sprinkling cheese"
+}
+],
+"start_time": 519.4297857866795,
+"end_time": 538.196281273166
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"errors": [
+{
+"tag": "Timing Error",
+"description": "Microvawe for 2 mins instead of 1 min 20 secs"
+}
+],
+"start_time": 536.8558173098456,
+"end_time": 680.2854613851351,
+"modified_description": "Microwave-Microwave for 2 minute, or until it rises and the toppings are bubbling"
+}
+]
+},
+{
+"recording_id": "3_49",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Take a soiled mug without cleaning it"
+}
+],
+"start_time": 6.022490092664093,
+"end_time": 24.842771632239383,
+"modified_description": "Take-Take a microwavable mug (not washed)"
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add-Measure 1/4 teaspoon of baking powder and add it to the mug"
+}
+],
+"start_time": 27.101205416988414,
+"end_time": 45.16867569498069,
+"modified_description": "add-Measure 1/4 teaspoon of baking powder and add it to the mug"
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add-Measure 5 tablespoons of flour and add it to the mug"
+}
+],
+"start_time": 61.73052344980695,
+"end_time": 117.4385568069498,
+"modified_description": "add-Measure 5 tablespoons of flour and add it to the mug"
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"start_time": 118.94417933011583,
+"end_time": 141.52851717760618
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"errors": [
+{
+"tag": "Measurement Error",
+"description": "add-Measure 1/4 teaspoon of salt and add it to the mug"
+}
+],
+"start_time": 150.56225231660233,
+"end_time": 162.6072325019305,
+"modified_description": "add-Measure 1/4 teaspoon of salt and add it to the mug"
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"start_time": 173.89940142567568,
+"end_time": 209.2815307200772
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"start_time": 215.30402081274133,
+"end_time": 246.9220937992278
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Add-Add in 3 tablespoons of curd to the mug"
+}
+],
+"start_time": 308.65261724903473,
+"end_time": 351.56285915926645,
+"modified_description": "Add-Add in 3 tablespoons of curd to the mug"
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before mixing and spreading marinara sauce"
+}
+],
+"start_time": 356.07972672876446,
+"end_time": 383.18093214575293
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Take-Take 1 tablespoon of tomato ketchup"
+}
+],
+"start_time": 424.5855515328185,
+"end_time": 459.214869565637,
+"modified_description": "Take-Take 1 tablespoon of tomato ketchup"
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"errors": [
+{
+"tag": "Technique Error",
+"description": "spread-spread tomato ketchup on the edge of batter"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after sprinkling dried italian herbs"
+}
+],
+"start_time": 457.7092470424711,
+"end_time": 469.7542272277992,
+"modified_description": "spread-spread tomato ketchup on the edge of batter"
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed before mixing the contents of the mug"
+}
+],
+"start_time": 508.9004128301158,
+"end_time": 541.2712970781854
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after sprinkling cheese and herbs"
+}
+],
+"start_time": 547.2937871708494,
+"end_time": 593.9680853889961
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"errors": [
+{
+"tag": "Timing Error",
+"description": "Microwave-Microwave for 2 minutes, or until it rises and the toppings are bubbling"
+}
+],
+"start_time": 616.5524232364864,
+"end_time": 765.6090530299227,
+"modified_description": "Microwave-Microwave for 2 minutes, or until it rises and the toppings are bubbling"
+}
+]
+},
+{
+"recording_id": "3_50",
+"activity_id": 3,
+"is_error": true,
+"step_annotations": [
+{
+"description": "Take-Take a microwavable mug",
+"step_id": 36,
+"start_time": 3.9241905376447876,
+"end_time": 11.336550442084942
+},
+{
+"description": "add-Measure 1/8 teaspoon of baking powder and add it to the mug",
+"step_id": 40,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Using soiled measuring spoons (might contaminate the ingredients)"
+}
+],
+"start_time": 35.317714838803084,
+"end_time": 60.6069427480695,
+"modified_description": "add-Measure 1/8 teaspoon of baking powder using soiled measuring spoon"
+},
+{
+"description": "add-Measure 4 tablespoons of flour and add it to the mug",
+"step_id": 33,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Not using dried and cleaned measuring spoons (might contaminate the ingredients)"
+}
+],
+"start_time": 69.76338733590734,
+"end_time": 102.4649751496139,
+"modified_description": "add-Measure 4 tablespoons of flour using dirty measuring spoon and add it to the mug"
+},
+{
+"description": "Sprinkle-Sprinkle 1 generous tablespoon of mozzarella cheese on top of the sauce",
+"step_id": 39,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Not using dried and cleaned measuring spoons (might contaminate the ingredients)"
+},
+{
+"tag": "Preparation Error",
+"description": "Use cheddar cheese instead of mozzarella cheese"
+},
+{
+"tag": "Order Error",
+"description": "Step performed before adding milk and olive oil"
+}
+],
+"start_time": 118.59775847104247,
+"end_time": 153.0434309681467,
+"modified_description": "Sprinkle-Sprinkle 1 generous tablespoon of cheddar cheese on top of the sauce"
+},
+{
+"description": "add-Measure 1/8 teaspoon of salt and add it to the mug",
+"step_id": 28,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Not using dried and cleaned measuring spoons (might contaminate the ingredients)"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese"
+}
+],
+"start_time": 169.6122354604247,
+"end_time": 187.05308229440155,
+"modified_description": "add-Measure 1/8 teaspoon of salt using dirty measuring spoon and add it to the mug"
+},
+{
+"description": "Stir-Stir the contents in the mug well",
+"step_id": 38,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese"
+}
+],
+"start_time": 191.41329400289578,
+"end_time": 203.62188678667957
+},
+{
+"description": "Add-Add in 3 tablespoons of milk to the mug",
+"step_id": 41,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese and before adding baking soda"
+}
+],
+"start_time": 208.85414083687257,
+"end_time": 233.7073475752896
+},
+{
+"description": "Add-1 tablespoon of olive oil to the mug",
+"step_id": 34,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese and before adding baking soda"
+}
+],
+"start_time": 245.47991918822396,
+"end_time": 263.79280836389967,
+"modified_description": "Add-1 tablespoon of olive oil to the mug and leave the cap open"
+},
+{
+"description": "Mix-Mix the contents of the mug thoroughly. (There might be some lumps, but that is ok.)",
+"step_id": 37,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese and before adding baking soda"
+}
+],
+"start_time": 269.0250624140927,
+"end_time": 286.0298880772201
+},
+{
+"description": "Take-Take 1 tablespoon of marinara sauce",
+"step_id": 30,
+"errors": [
+{
+"tag": "Preparation Error",
+"description": "Use salsa sauce instead of marinara sauce"
+},
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese and before adding baking soda"
+}
+],
+"start_time": 291.69816329826256,
+"end_time": 312.19115832818534,
+"modified_description": "Take-Take 1 tablespoon of salsa sauce"
+},
+{
+"description": "spread-spread marinara sauce around the surface of the batter",
+"step_id": 31,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after adding cheese and before adding baking soda"
+}
+],
+"start_time": 324.3997511119692,
+"end_time": 330.06802633301163
+},
+{
+"description": "add-Measure 1/16 teaspoon of baking soda and add it to the mug",
+"step_id": 35,
+"errors": [
+{
+"tag": "Order Error",
+"description": "Step performed after correct order"
+}
+],
+"start_time": 335.7363015540541,
+"end_time": 350.12500019208494
+},
+{
+"description": "Sprinkle-Sprinkle dried Italian herbs inside the mug",
+"step_id": 29,
+"start_time": 359.71746595077224,
+"end_time": 368.43788936776065
+},
+{
+"description": "Microwave-Microwave for 1 minute 20 seconds, or until it rises and the toppings are bubbling",
+"step_id": 32,
+"errors": [
+{
+"tag": "Timing Error",
+"description": "Microwaving it for 1 minute instead of 1 minute 20 seconds"
+}
+],
+"start_time": 372.36207990540544,
+"end_time": 444.74159426640927
+}
+]
+}
+]

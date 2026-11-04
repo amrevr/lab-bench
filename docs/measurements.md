@@ -28,3 +28,147 @@ Glimmer notes (2026-10-31, 12_119 keyframes, no SAM, events fed to the aligner):
   where verifying draft tokens for many requests saturates the GPUs: keep vision calls near one in flight. Quality
   on clean 12_119 is unchanged (55-61 event windows, 3 steps on track, 3-4 false asks in every run). The drafter
   needs `--gpu-memory-utilization 0.44` (about 32 GB per GPU instead of 26).
+
+## End-to-end real-time run with the current defaults (2026-11-04)
+
+`replay --pace realtime` (live 60 s vision timeout, 4 keyframes, `--issues`, no SAM, Glimmer with the drafter),
+run on dsp with no other job of ours on the Glimmer server, on 12_41 (470 s) and 8_31:
+
+| Clip | Glimmer call p50 / p90 | Window close -> events reach the aligner, p50 / p90 / max | Failed windows |
+|---|---|---|---|
+| 12_41 | 15.7 / 29.8 s | 120 / 205 / 230 s | 0 of 189 |
+| 8_31 | 14.8 / 31.6 s | 89 / 132 / 150 s | 0 of 107 |
+| 12_41, hosted Muse Spark Open (Baseten), same settings | 4.9 / 11.5 s | 6.5 / 11.9 / 16.9 s | 0 of 189 |
+
+Not real time on this run: the H100s were at 100% utilization from another user's jobs (about 32 GB and 9 GB,
+started during the run), and each Glimmer call took ~8x its idle-GPU time (1.8 s p50 at real-time pace, table
+above), so windows queued and verdicts fell 1.5-4 minutes behind. With GPUs to ourselves the measured per-call
+latency (1.8 s p50, 4.1 s p90) is below the 2.5 s window stride, which is what real time needs; that end-to-end
+claim was not re-measured on an idle machine. Real time therefore needs dedicated GPUs (or the hosted backend),
+not a shared machine.
+
+The same real-time replay of 12_41 on the hosted Spark Open backend kept up: window close to events in the aligner
+6.5 s median and never more than 17 s (no backlog over the 470 s clip), verdicts 3.7-14.1 s after their window
+closed (median about 9 s). It raised the same technique flag on the tomato slicing (step 119) 8.7 s after the
+window closed; the shared-GPU Glimmer run raised it 70 s late. This is near real time (alerts about 10 s after the
+moment), measured end to end on dedicated hosted hardware.
+
+## Accuracy and generalization (2026-11-01/03)
+
+Scored with `python -m labbench.eval --cc4d ... --realign <protocol>` against CaptainCook4D's own error annotations
+and step times (strict = right step, compatible verdict, during the step or within 30 s, not an end-of-clip ask
+except for omissions; lenient = any non-ok verdict on the step). The protocol's own expert clip is never scored.
+Glimmer 30B with the DFlash drafter, SAM off the verdict path, `--issues` on, visibility calibrated from the expert
+run. Recipe 12 uses its hand-written protocol; recipes 8 and 10 use protocols generated from the CaptainCook4D
+task graphs by Glimmer (`scripts/make_protocol.py`), not hand-tuned.
+
+| Recipe (clips) | Split | Error steps caught strict (in time) | Lenient | False alarms mid / end | Error clips caught | Normal clips with a mid-clip alarm | EgoPER EDA |
+|---|---|---|---|---|---|---|---|
+| 12 tomato salad (16) | tune | 7/24 (3) | 12/24 | 3 / 8 | 4/4 | 2/7 | 77/95 |
+| 12 | held-out | 0/7 (0) | 2/7 | 6 / 2 | 0/2 | 1/3 | 33/44 |
+| 8 hot chocolate (15) | dev (generalization fixes tuned here) | 15/41 (9) | 28/41 | 8 / 25 | 9/9 | 2/6 | 60/89 |
+| 10 pinwheels (11) | dev (informed visibility calibration and the aligner fixes) | 19/91 (19) | 32/91 | 21 / 7 | 7/8 | 3/3 | 105/180 |
+| 1 microwave egg sandwich (17) | dev (informed aligner fix 030118f) | 18/77 (17) | 40/77 | 34 / 14 | 11/13 | 2/4 | 121/181 |
+| 3 mug pizza (12) | clean test at afde3bd (see below); rescored here with the later rules | 9/43 (7) | 21/43 | 38 / 17 | 5/7 | 5/5 | 100/157 |
+| 27 cheese pimiento (14) | **clean test of the current code** (protocol frozen before any run) | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 5/5 | 88/139 |
+
+Calibration used by these rows: the committed `fixtures/recipe{1,3,27}/protocol.json` are the pre-calibration
+protocols. Each row was scored with a copy calibrated per backend from that recipe's expert run (the protocol's
+`source_clip`), e.g. for recipe 27 on Glimmer:
+`python3 scripts/calibrate_visibility.py --protocol fixtures/recipe27/protocol.json --expert-session <27_13.session.json> --out /tmp/r27_cal.json`,
+then `python -m labbench.eval ... --realign /tmp/r27_cal.json`. Recipes 10 and 12 ship already calibrated.
+
+Numbers are with the aligner and scorer fixes from the PR #27 review (e7e83b3, 912a19b); all sessions were
+re-scored offline from their saved Glimmer events. EDA leaves out Measurement/Temperature-only steps, like every
+other line. Mishap ("issue") verdicts are counted separately: 12 caught an annotated error and 19 were false alarms
+across recipes 12, 8 and 10 (~39% precise).
+
+Rows above use the current code: aligner fix 030118f and mishap flags backed only at confidence >= 0.8 or when the
+same mishap is seen again (ISSUE_STRONG). That rule was chosen on all five recipes together: it cuts 33 of 192 false
+alarms for 8 of 63 strict catches, and mishap flags go from ~15% to 36% precise (8 right, 14 wrong). Every recipe
+here has now informed a decision; the next clean test is a fresh recipe.
+
+Recipe 27 is the clean test of the current code (030118f aligner fix and ISSUE_STRONG): protocol generated and
+committed before any run, visibility calibrated from its expert run 27_13 (3 of 11 steps hidden), nothing changed
+after seeing the result. It catches at least one error in 8 of 9 error recordings (strict 27%, lenient 36%), with
+about 1.9 false alarms per recording (recipe 3: about 4.6), but still a mid-clip alarm on every normal recording.
+Mishap flags were 4 right, 1 wrong (recipe 3 before ISSUE_STRONG: 4 right, 26 wrong). Different recipes, one run
+each: this is consistent with the precision rules generalizing, not proof.
+
+Backend comparison on the same clean recipe (27, all 15 recordings, current aligner and scorer, each backend's
+visibility calibrated from its own expert run; one run each):
+
+| Backend | Strict (in time) | Lenient | False alarms mid / end | Error recordings caught | Mishap flags right / wrong | Failed windows |
+|---|---|---|---|---|---|---|
+| Glimmer 30B, self-hosted | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 4 / 1 | 0 of 4619 |
+| Spark Open, hosted (Baseten) | 15/45 (15) | 24/45 | 39 / 6 | 8/9 | 7 / 4 | 29 of 4619 |
+
+Spark sees more of recipe 27 (calibration hides 0 of 11 steps vs 3 for Glimmer;), catches more errors and catches
+them on time (15 of 15 strict catches within the step, vs 9 of 12), and it is the backend that keeps up end to end in
+real time (above). The cost is about twice the mid-clip false alarms. Strict differences are within run-to-run
+noise; lenient (+8) and false alarms (+19) are larger than the noise seen on recipe 8. Neither backend dominates:
+Glimmer for precision, Spark for recall and real time.
+
+Before/after on the same clean set: recipe 27's saved Glimmer events (15 sessions, expert excluded, same calibrated
+protocol, same scorer), replayed through three versions of the aligner:
+
+| Aligner | Strict (in time) | Lenient | False alarms mid / end | Error recordings caught | Mishap flags right / wrong |
+|---|---|---|---|---|---|
+| `main` before this work (75b4208) | 10/45 (5) | 33/45 | 32 / 58 | 7/9 | 0 / 0 |
+| PR #27 before the last two rules (e7e83b3) | 12/45 (9) | 17/45 | 28 / 6 | 8/9 | 4 / 8 |
+| current | 12/45 (9) | 16/45 | 20 / 6 | 8/9 | 4 / 1 |
+
+On identical perception, false alarms fall from 90 to 26 (71%) with more strict and on-time catches; the old
+aligner's high lenient count comes from warning on most steps of every recording. This isolates the aligner: the
+events already include this work's prompt changes (`--issues`, protocol-derived actions), so it understates the
+total change, and the old aligner never saw generated protocols in practice.
+
+Recipe 3's clean result, as run before these two changes (afde3bd): strict 13/43 (11), lenient 28/43, false alarms
+56 / 17, error clips 6/7, every normal clip with a mid-clip alarm, EDA 102/157. Recipe 3 is the clean out-of-sample result (recipe 1 informed the aligner fix 030118f): it finds mistakes about
+as well as the development recipes (strict 30%, lenient 65%, 6 of 7 error clips) but raises about 6 false alarms per
+clip, every normal clip gets a mid-clip alarm, and mishap flags are only 13% precise there (4 right, 26 wrong).
+
+Recipe 1 was the first clean out-of-sample result: its protocol was generated and committed before any run, and
+nothing was changed after seeing its numbers. It is much weaker than recipes 8 and 12: Glimmer recognizes its steps
+(spraying a ramekin, three microwave steps, assembly) poorly, and calibration hides only 1 of its 12 steps, so the
+aligner asks about steps Glimmer simply missed. Accuracy depends strongly on how visible a recipe's steps are to
+the vision model; a single headline number across recipes would mislead.
+
+Recipe 10's first, fully untouched result (before visibility calibration): strict 25/91, lenient 48/91, 83 false
+alarms, EDA 49%.
+
+Run-to-run variance (same pipeline, recipe 8, two runs): strict 11 vs 15, in time 3 vs 9, mid-clip false alarms
+10 vs 3. Treat single-run differences under about 4 catches or 7 false alarms as noise. Glimmer call failures
+(timeouts under load) are about 1%.
+
+What moved accuracy (measured):
+- Visible mishaps (`--issues`): above both baseline runs on recipe 8 (strict 11 and 13 -> 16, lenient 28 -> 33,
+  error clips 9/9) and on recipe 10 (strict 6 -> 17, lenient 16 -> 37); issue verdicts are ~39% precise, so more
+  "was there a spill?" asks (recipe 8 mid-clip false alarms 14 vs 5-10 without it).
+- Generated protocols + lenient noun matching + verb aliases / container steps / on-camera forms: recipe 12's
+  generated protocol matches the hand-written one; recipe 8 false alarms 36 -> 32 at equal catches.
+- Visibility calibration from the expert run: recipe 10 false alarms 83 -> 18, EDA 49% -> 59%, at a recall cost.
+- Gate 0.6 instead of 0.8: same catches, warnings up to 5 min earlier.
+
+Ruled out (measured): skipping Glimmer's reasoning (misses most steps); protocol in the prompt with techniques
+(Glimmer echoes "slice"), steps-only or technique-definition prompts (more false alarms on 17 clips); gating
+end-of-clip asks on later steps (loses 5/6 omissions); merging two Glimmer runs (no better than the better run);
+frozen V-JEPA 2 ViT-L probes (error detection AUC ~0.55, below chance across recipes; step recognition 0.22-0.28
+from one expert run); SAM 3.1 in the verdict path (12_41 fell 16 min behind). Expected-step verification (`--verify` on branch exp/verify-step:
+a second Glimmer call per window asking yes/no about the next 3 expected steps plus a decoy; per-window recall
+0.04 -> 0.14 on recipe 8 in a sampled test) did not carry over end to end: on recipe 27, the same run with and
+without its events gives strict 9 vs 9, lenient 14 vs 13, mid-clip false alarms 21 vs 19, and the decoy got a
+"yes" in 505 of 4619 windows (11%, vs ~1% in the sampled test), at twice the Glimmer calls. Not merged.
+
+8 frames per window (`--nframes 8 --pair`, recipe 12, 14 of 17 clips, same clips compared): no gain. Tune strict
+8/24 both, lenient 12 vs 13, mid-clip false alarms 5 vs 4; held-out 1/3 vs 0/3 (noise). Each Glimmer call costs
+about 2x. Not adopted; the recipe-8 part of the comparison was skipped.
+
+Not re-measured: latency under today's shared-GPU load (another user's jobs pushed a 4-frame Glimmer call from ~2 s
+to ~12 s). Runs from the sandbox depend on an SSH tunnel that dropped several times a day; `replay.py` now aborts a
+clip without writing a session when the vision model is unreachable, and offline accuracy runs use
+`--vision-timeout 300` (at 60 s, a loaded GPU dropped 10-30% of windows).
+
+Evaluation caveats (from code review of PR #27): the 0.6 gate was chosen on the same recipe-12 clips reported as
+"tune"; recipe 8 was development data; `--issues` default and visibility calibration were decided after seeing
+recipes 8, 10 and 12. The clean generalization numbers are the first recipe-10 run above and recipe 1.
